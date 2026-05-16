@@ -94,7 +94,7 @@ def build_home_view(
             ink=True,
             height=CARD_HEIGHT,
             key=f"home_card_{idx}",
-            on_click=lambda _: on_select_content(content),
+            on_click=lambda _: page_obj.run_task(on_select_content, content),
             on_hover=lambda e: on_hover_card(e, card_container),
         )
         card_container.tab_index = idx + 10
@@ -250,6 +250,7 @@ def build_home_view(
         state.active_category = category
         state.latest_page = 1
         state.latest_releases = []
+        state.is_loading = True
         update_grid()
         page_obj.update()
         page_obj.run_task(on_load_latest, 1)

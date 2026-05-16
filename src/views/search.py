@@ -92,7 +92,7 @@ def build_search_view(
             ink=True,
             height=CARD_HEIGHT,
             key=f"search_card_{idx}",
-            on_click=lambda _: on_select_content(content),
+            on_click=lambda _: page_obj.run_task(on_select_content, content),
             on_hover=lambda e: on_hover_card(e, card_container),
         )
         card_container.tab_index = idx + 10
@@ -136,7 +136,7 @@ def build_search_view(
         for i, r in enumerate(state.search_results):
             results_grid.controls.append(build_card(r, i))
 
-        if state.is_loading and not state.search_results:
+        if state.is_loading:
             scroll_content.controls = [
                 header,
                 search_field_container,
@@ -146,7 +146,30 @@ def build_search_view(
                     content=ft.ProgressRing(color=AppColors.PRIMARY, stroke_width=4)
                 )
             ]
-        elif not state.search_results and not state.is_loading:
+        elif not state.search_results and state.search_query:
+            scroll_content.controls = [
+                header,
+                search_field_container,
+                ft.Container(
+                    expand=True,
+                    alignment=ft.Alignment.CENTER,
+                    content=ft.Column(
+                        [
+                            ft.Icon(ft.Icons.SEARCH_OFF_ROUNDED, size=64, color=ft.Colors.ON_SURFACE_VARIANT),
+                            ft.Container(height=16),
+                            ft.Text(
+                                f"No results found for '{state.search_query}'",
+                                color=ft.Colors.ON_SURFACE_VARIANT,
+                                size=16,
+                                text_align=ft.TextAlign.CENTER,
+                            ),
+                        ],
+                        horizontal_alignment=ft.CrossAxisAlignment.CENTER,
+                        alignment=ft.MainAxisAlignment.CENTER,
+                    )
+                )
+            ]
+        elif not state.search_results and not state.search_query:
             scroll_content.controls = [
                 header,
                 search_field_container,
