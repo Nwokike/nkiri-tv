@@ -46,6 +46,7 @@ class AppState:
     search_has_more: bool = True
     episodes: list[Episode] = []
     episodes_has_more: bool = True
+    episodes_page: int = 1
     selected_source: Source | None = None
     current_content_id: int = 0
     current_episode_index: int = 0

@@ -160,8 +160,9 @@ async def main(page: ft.Page):
             page.refresh_search_results()
         page.update()
 
-    async def load_episodes(content_id: int):
+    async def load_episodes(content_id: int, page_num: int = 1):
         state.is_loading = True
+        state.episodes_page = page_num
         if hasattr(page, "refresh_episodes"):
             page.refresh_episodes()
         page.update()
@@ -250,6 +251,7 @@ async def main(page: ft.Page):
                 id=content_id, title="Loading...", poster="", year="", rating="",
                 description="", nkiri_id=content_id, categories=[], content_type="",
             )
+            state.episodes_page = 1
             page.views.append(
                 build_content_detail_view(
                     page_obj=page,
@@ -258,7 +260,7 @@ async def main(page: ft.Page):
                     on_play_episode=play_episode,
                 )
             )
-            page.run_task(load_episodes, content_id)
+            page.run_task(load_episodes, content_id, 1)
 
         elif parsed.path == "/play":
             try:
