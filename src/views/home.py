@@ -148,14 +148,14 @@ def build_home_view(
         next_btn.disabled = True
         loading_spinner.visible = True
         page_obj.update()
-        page_obj.run_task(lambda: load_page(state.latest_page + 1))
+        load_page(state.latest_page + 1)
 
     def on_prev_page(e):
         if state.latest_page > 1:
             prev_btn.disabled = True
             loading_spinner.visible = True
             page_obj.update()
-            page_obj.run_task(lambda: load_page(state.latest_page - 1))
+            load_page(state.latest_page - 1)
 
     def _style_focusable(control, focused):
         if focused:
@@ -263,16 +263,22 @@ def build_home_view(
 
     category_chips = ft.Container(
         padding=ft.Padding.only(left=24, right=24, top=8, bottom=8),
-        content=ft.Row(
+        content=ft.Column(
             controls=[
-                ft.Chip(
-                    label=ft.Text(cat, size=13),
-                    selected=state.active_category == cat,
-                    on_select=lambda e, c=cat: on_chip_selected(c),
-                )
-                for cat in CATEGORIES.keys()
+                ft.Row(
+                    controls=[
+                        ft.Chip(
+                            label=ft.Text(cat, size=13),
+                            selected=state.active_category == cat,
+                            on_select=lambda e, c=cat: on_chip_selected(c),
+                        )
+                        for cat in CATEGORIES.keys()
+                    ],
+                    spacing=8,
+                    wrap=True,
+                ),
             ],
-            spacing=8,
+            spacing=0,
             scroll=True,
         ),
     )

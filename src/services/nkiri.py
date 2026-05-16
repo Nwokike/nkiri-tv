@@ -38,22 +38,25 @@ class NkiriScraper:
 
     @staticmethod
     def _clean_title(raw_title: str) -> tuple[str, str, str]:
-        title = BeautifulSoup(raw_title, "html.parser").get_text(strip=True)
-        title = re.sub(r'\s*\|\s*.*$', '', title).strip()
+        # Extract plain text from the raw HTML title
+        raw_text = BeautifulSoup(raw_title, "html.parser").get_text(strip=True)
+        # Determine content type using the original text (includes any "movie"/"film" suffix)
+        lower_raw = raw_text.lower()
+        content_type = "series"
+        if any(kw in lower_raw for kw in ["movie", "film"]):
+            content_type = "movie"
+        elif any(kw in lower_raw for kw in ["s01", "s02", "s03", "s04", "s05", "s06", "s07", "s08", "s09", "s10", "season", "episode"]):
+            content_type = "series"
+        # Clean the title for display: strip pipe suffix and any download suffix
+        title = re.sub(r'\s*\|\s*.*$', '', raw_text).strip()
         title = re.sub(r'\s*Download\s*.*$', '', title, flags=re.IGNORECASE).strip()
 
+        # Extract year from the cleaned title
         year_match = re.search(r'\((\d{4})\)', title)
         year = year_match.group(1) if year_match else ""
         if year:
             title = title.replace(f"({year})", "").strip()
             title = re.sub(r'\s*[-–—]\s*$', '', title).strip()
-
-        content_type = "series"
-        lower = title.lower()
-        if any(kw in lower for kw in ["movie", "film"]):
-            content_type = "movie"
-        elif any(kw in lower for kw in ["s01", "s02", "s03", "s04", "s05", "s06", "s07", "s08", "s09", "s10", "season", "episode"]):
-            content_type = "series"
 
         return title, year, content_type
 
@@ -81,42 +84,62 @@ class NkiriScraper:
         episodes = []
 
         download_links = soup.find_all("a", href=re.compile(r"downloadwella\.com"))
+        fallback = None  # For movies without episode info
+
         for link in download_links:
             href = link["href"]
             title_text = link.get_text(strip=True)
 
+            # Derive a readable title if link text is generic or empty
             if not title_text or "download" in title_text.lower() or "click" in title_text.lower():
                 filename = href.split("/")[-1]
                 title_text = filename.replace(".html", "").replace("(THENKIRI.COM)", "").replace(".", " ").strip()
 
             title_text = re.sub(r'\s+', ' ', title_text).strip()
 
+            # Try to find season/episode patterns
             episode_match = re.search(r'[Ss](\d+)[Ee](\d+)', title_text)
             if not episode_match:
                 episode_match = re.search(r'[Ss]eason\s*(\d+)\s*[Ee]pisode\s*(\d+)', title_text, re.IGNORECASE)
             if not episode_match:
                 episode_match = re.search(r'[Ee]pisode\s*(\d+)', title_text, re.IGNORECASE)
 
-            season = "1"
-            ep_num = 0
             if episode_match:
+                season = "1"
+                ep_num = 0
                 if episode_match.lastindex == 2:
                     season = episode_match.group(1)
                     ep_num = int(episode_match.group(2))
                 else:
                     ep_num = int(episode_match.group(1))
 
-            if ep_num == 0:
-                continue
+                size_match = re.search(r'(\d+(?:\.\d+)?\s*[MGK]B)', title_text)
+                size = size_match.group(1) if size_match else ""
 
+                episodes.append(Episode(
+                    id=len(episodes) + 1,
+                    title=title_text or f"Season {season} Episode {ep_num}",
+                    season=season,
+                    episode_number=ep_num,
+                    thumbnail="",
+                    downloadwella_url=href,
+                    size=size,
+                ))
+            else:
+                # No episode pattern found; remember as possible movie link
+                if fallback is None:
+                    fallback = (href, title_text)
+
+        # If no episodes parsed but we have a fallback (likely a movie), create a single entry
+        if not episodes and fallback:
+            href, title_text = fallback
             size_match = re.search(r'(\d+(?:\.\d+)?\s*[MGK]B)', title_text)
             size = size_match.group(1) if size_match else ""
-
             episodes.append(Episode(
-                id=len(episodes) + 1,
-                title=title_text or f"Season {season} Episode {ep_num}",
-                season=season,
-                episode_number=ep_num,
+                id=1,
+                title=title_text or "Movie",
+                season="1",
+                episode_number=1,
                 thumbnail="",
                 downloadwella_url=href,
                 size=size,
