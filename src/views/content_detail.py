@@ -24,6 +24,9 @@ def build_content_detail_view(
         visible=False,
     )
 
+    prev_spinner = ft.ProgressRing(color=AppColors.PRIMARY, stroke_width=3, width=20, height=20, visible=False)
+    next_spinner = ft.ProgressRing(color=AppColors.PRIMARY, stroke_width=3, width=20, height=20, visible=False)
+
     def on_hover_ep(e, container):
         if e.data == "true":
             container.scale = 1.03
@@ -168,6 +171,8 @@ def build_content_detail_view(
 
     def refresh_episodes():
         episode_grid.controls.clear()
+        prev_spinner.visible = False
+        next_spinner.visible = False
         if state.is_loading:
             loading_indicator.visible = True
         else:
@@ -175,45 +180,29 @@ def build_content_detail_view(
             for i, ep in enumerate(state.episodes):
                 episode_grid.controls.append(_build_episode_card(ep, i))
 
-        prev_btn = ft.Container(
-            content=ft.Row(
-                [
-                    ft.Icon(ft.Icons.ARROW_BACK_IOS_NEW_ROUNDED, color=ft.Colors.ON_SURFACE if state.episodes_page > 1 else ft.Colors.ON_SURFACE_VARIANT),
-                    ft.Text("Previous", color=ft.Colors.ON_SURFACE if state.episodes_page > 1 else ft.Colors.ON_SURFACE_VARIANT),
-                ],
-                spacing=8,
-            ),
-            padding=ft.Padding(15, 10, 15, 10),
-            border_radius=10,
-            border=ft.Border.all(1.5, AppColors.PRIMARY),
-            ink=True,
-            on_click=on_prev_ep_page if state.episodes_page > 1 else None,
+        prev_btn.content = ft.Row(
+            [
+                ft.Icon(ft.Icons.ARROW_BACK_IOS_NEW_ROUNDED, color=ft.Colors.ON_SURFACE if state.episodes_page > 1 else ft.Colors.ON_SURFACE_VARIANT),
+                ft.Text("Previous", color=ft.Colors.ON_SURFACE if state.episodes_page > 1 else ft.Colors.ON_SURFACE_VARIANT),
+            ],
+            spacing=8,
         )
+        prev_btn.disabled = state.episodes_page <= 1
         num_eps = len(state.episodes)
         prev_btn.tab_index = num_eps + 2
-        prev_btn.on_focus = lambda e: _style_focusable(e.control, True)
-        prev_btn.on_blur = lambda e: _style_focusable(e.control, False)
 
-        next_btn = ft.Container(
-            content=ft.Row(
-                [
-                    ft.Text("Next", color=ft.Colors.ON_SURFACE if state.episodes_has_more else ft.Colors.ON_SURFACE_VARIANT),
-                    ft.Icon(ft.Icons.ARROW_FORWARD_IOS_ROUNDED, color=ft.Colors.ON_SURFACE if state.episodes_has_more else ft.Colors.ON_SURFACE_VARIANT),
-                ],
-                spacing=8,
-            ),
-            padding=ft.Padding(15, 10, 15, 10),
-            border_radius=10,
-            border=ft.Border.all(1.5, AppColors.PRIMARY),
-            ink=True,
-            on_click=on_next_ep_page if state.episodes_has_more else None,
+        next_btn.content = ft.Row(
+            [
+                ft.Text("Next", color=ft.Colors.ON_SURFACE if state.episodes_has_more else ft.Colors.ON_SURFACE_VARIANT),
+                ft.Icon(ft.Icons.ARROW_FORWARD_IOS_ROUNDED, color=ft.Colors.ON_SURFACE if state.episodes_has_more else ft.Colors.ON_SURFACE_VARIANT),
+            ],
+            spacing=8,
         )
+        next_btn.disabled = not state.episodes_has_more
         next_btn.tab_index = num_eps + 3
-        next_btn.on_focus = lambda e: _style_focusable(e.control, True)
-        next_btn.on_blur = lambda e: _style_focusable(e.control, False)
 
         ep_nav = ft.Row(
-            controls=[prev_btn, ft.Text(f"Page {state.episodes_page}", color=ft.Colors.ON_SURFACE, weight=ft.FontWeight.W_500), next_btn],
+            controls=[prev_btn, prev_spinner, ft.Text(f"Page {state.episodes_page}", color=ft.Colors.ON_SURFACE, weight=ft.FontWeight.W_500), next_spinner, next_btn],
             alignment=ft.MainAxisAlignment.CENTER,
             spacing=16,
         )
@@ -222,17 +211,25 @@ def build_content_detail_view(
         page_obj.update()
 
     def on_next_ep_page(e):
+        next_btn.disabled = True
+        next_spinner.visible = True
+        page_obj.update()
         state.is_loading = True
         state.episodes_page += 1
         page_obj.run_task(on_load_episodes, content.nkiri_id, state.episodes_page)
 
     def on_prev_ep_page(e):
         if state.episodes_page > 1:
+            prev_btn.disabled = True
+            prev_spinner.visible = True
+            page_obj.update()
             state.is_loading = True
             state.episodes_page -= 1
             page_obj.run_task(on_load_episodes, content.nkiri_id, state.episodes_page)
 
     def on_back(e):
+        back_btn.disabled = True
+        page_obj.update()
         if len(page_obj.views) > 1:
             page_obj.views.pop()
             page_obj.update()
@@ -391,6 +388,42 @@ def build_content_detail_view(
         controls=[content_stack],
         padding=0,
     )
+
+    prev_btn = ft.Container(
+        content=ft.Row(
+            [
+                ft.Icon(ft.Icons.ARROW_BACK_IOS_NEW_ROUNDED, color=ft.Colors.ON_SURFACE_VARIANT),
+                ft.Text("Previous", color=ft.Colors.ON_SURFACE_VARIANT),
+            ],
+            spacing=8,
+        ),
+        padding=ft.Padding(15, 10, 15, 10),
+        border_radius=10,
+        border=ft.Border.all(1.5, AppColors.PRIMARY),
+        ink=True,
+        on_click=on_prev_ep_page,
+    )
+    prev_btn.tab_index = 2
+    prev_btn.on_focus = lambda e: _style_focusable(e.control, True)
+    prev_btn.on_blur = lambda e: _style_focusable(e.control, False)
+
+    next_btn = ft.Container(
+        content=ft.Row(
+            [
+                ft.Text("Next", color=ft.Colors.ON_SURFACE_VARIANT),
+                ft.Icon(ft.Icons.ARROW_FORWARD_IOS_ROUNDED, color=ft.Colors.ON_SURFACE_VARIANT),
+            ],
+            spacing=8,
+        ),
+        padding=ft.Padding(15, 10, 15, 10),
+        border_radius=10,
+        border=ft.Border.all(1.5, AppColors.PRIMARY),
+        ink=True,
+        on_click=on_next_ep_page,
+    )
+    next_btn.tab_index = 3
+    next_btn.on_focus = lambda e: _style_focusable(e.control, True)
+    next_btn.on_blur = lambda e: _style_focusable(e.control, False)
 
     refresh_episodes()
 

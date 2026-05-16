@@ -1,7 +1,7 @@
 [project]
 name = "nkiri-tv"
 version = "0.1.0"
-description = "Lightweight client-side Android TV / mobile / desktop app for streaming movies and series from Nkiri."
+description = "Lightweight client-side Android TV / mobile / desktop app for streaming movies, series, and dramas from Nkiri. Zero server. Built with Python and Flet."
 readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
@@ -9,7 +9,6 @@ dependencies = [
     "beautifulsoup4>=4.12.0",
     "flet==0.85.0",
     "flet-video==0.85.0",
-    "httpx>=0.28.1",
     "requests>=2.31.0",
 ]
 

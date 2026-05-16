@@ -12,6 +12,8 @@ def build_search_view(
 
     CARD_HEIGHT = 280
 
+    search_spinner = ft.ProgressRing(color=AppColors.PRIMARY, stroke_width=3, width=20, height=20, visible=False)
+
     search_field = ft.TextField(
         hint_text="Search movies, series...",
         color=ft.Colors.ON_SURFACE,
@@ -21,7 +23,7 @@ def build_search_view(
         prefix_icon=ft.Icons.SEARCH_ROUNDED,
         content_padding=20,
         text_size=16,
-        on_submit=lambda e: page_obj.run_task(on_search, e.data.strip()),
+        on_submit=lambda e: do_search(e.data.strip()),
         focused_border_color=AppColors.PRIMARY,
         focused_bgcolor=ft.Colors.with_opacity(0.1, AppColors.PRIMARY),
     )
@@ -30,6 +32,14 @@ def build_search_view(
         spacing=16,
         run_spacing=16,
     )
+
+    def do_search(query: str):
+        if not query or state.is_loading:
+            return
+        search_btn.disabled = True
+        search_spinner.visible = True
+        page_obj.update()
+        page_obj.run_task(on_search, query)
 
     def _on_focus_card(e, ctrl):
         ctrl.scale = 1.05
@@ -168,6 +178,8 @@ def build_search_view(
 
     def refresh_results():
         results_grid.controls.clear()
+        search_btn.disabled = False
+        search_spinner.visible = False
         if state.is_loading:
             loading_indicator.visible = True
             empty_state.visible = False
@@ -212,6 +224,17 @@ def build_search_view(
     back_btn.on_focus = _on_focus_btn
     back_btn.on_blur = _on_blur_btn
 
+    search_btn = ft.Container(
+        content=ft.Icon(ft.Icons.SEARCH_ROUNDED, color=ft.Colors.PRIMARY),
+        padding=10,
+        border_radius=10,
+        ink=True,
+        on_click=lambda _: do_search(search_field.value),
+    )
+    search_btn.tab_index = 2
+    search_btn.on_focus = _on_focus_btn
+    search_btn.on_blur = _on_blur_btn
+
     header = ft.Container(
         padding=ft.Padding.only(left=24, right=24, top=24, bottom=16),
         content=ft.Column(
@@ -236,7 +259,10 @@ def build_search_view(
                     spacing=12,
                 ),
                 ft.Container(height=8),
-                search_field,
+                ft.Row(
+                    [search_field, search_btn, search_spinner],
+                    spacing=8,
+                ),
             ],
             spacing=0,
         )

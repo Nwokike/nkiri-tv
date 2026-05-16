@@ -19,6 +19,8 @@ def build_home_view(
         margin=24,
     )
 
+    loading_spinner = ft.ProgressRing(color=AppColors.PRIMARY, stroke_width=3, width=20, height=20, visible=False)
+
     def on_hover_card(e, container):
         if e.data == "true":
             container.scale = 1.05
@@ -143,11 +145,17 @@ def build_home_view(
         page_obj.run_task(on_load_latest, page_num)
 
     def on_next_page(e):
-        load_page(state.latest_page + 1)
+        next_btn.disabled = True
+        loading_spinner.visible = True
+        page_obj.update()
+        page_obj.run_task(lambda: load_page(state.latest_page + 1))
 
     def on_prev_page(e):
         if state.latest_page > 1:
-            load_page(state.latest_page - 1)
+            prev_btn.disabled = True
+            loading_spinner.visible = True
+            page_obj.update()
+            page_obj.run_task(lambda: load_page(state.latest_page - 1))
 
     def _style_focusable(control, focused):
         if focused:
@@ -166,45 +174,29 @@ def build_home_view(
         for i, r in enumerate(state.latest_releases):
             latest_grid.controls.append(build_card(r, i))
 
-        prev_btn = ft.Container(
-            content=ft.Row(
-                [
-                    ft.Icon(ft.Icons.ARROW_BACK_IOS_NEW_ROUNDED, color=ft.Colors.ON_SURFACE if state.latest_page > 1 else ft.Colors.ON_SURFACE_VARIANT),
-                    ft.Text("Previous", color=ft.Colors.ON_SURFACE if state.latest_page > 1 else ft.Colors.ON_SURFACE_VARIANT),
-                ],
-                spacing=8,
-            ),
-            padding=ft.Padding(15, 10, 15, 10),
-            border_radius=10,
-            border=ft.Border.all(1.5, AppColors.PRIMARY),
-            ink=True,
-            on_click=on_prev_page if state.latest_page > 1 else None,
+        prev_btn.content = ft.Row(
+            [
+                ft.Icon(ft.Icons.ARROW_BACK_IOS_NEW_ROUNDED, color=ft.Colors.ON_SURFACE if state.latest_page > 1 else ft.Colors.ON_SURFACE_VARIANT),
+                ft.Text("Previous", color=ft.Colors.ON_SURFACE if state.latest_page > 1 else ft.Colors.ON_SURFACE_VARIANT),
+            ],
+            spacing=8,
         )
+        prev_btn.disabled = state.latest_page <= 1
         num_cards = len(state.latest_releases)
         prev_btn.tab_index = num_cards + 3
-        prev_btn.on_focus = lambda e: _style_focusable(e.control, True)
-        prev_btn.on_blur = lambda e: _style_focusable(e.control, False)
 
-        next_btn = ft.Container(
-            content=ft.Row(
-                [
-                    ft.Text("Next", color=ft.Colors.ON_SURFACE if state.latest_has_more else ft.Colors.ON_SURFACE_VARIANT),
-                    ft.Icon(ft.Icons.ARROW_FORWARD_IOS_ROUNDED, color=ft.Colors.ON_SURFACE if state.latest_has_more else ft.Colors.ON_SURFACE_VARIANT),
-                ],
-                spacing=8,
-            ),
-            padding=ft.Padding(15, 10, 15, 10),
-            border_radius=10,
-            border=ft.Border.all(1.5, AppColors.PRIMARY),
-            ink=True,
-            on_click=on_next_page if state.latest_has_more else None,
+        next_btn.content = ft.Row(
+            [
+                ft.Text("Next", color=ft.Colors.ON_SURFACE if state.latest_has_more else ft.Colors.ON_SURFACE_VARIANT),
+                ft.Icon(ft.Icons.ARROW_FORWARD_IOS_ROUNDED, color=ft.Colors.ON_SURFACE if state.latest_has_more else ft.Colors.ON_SURFACE_VARIANT),
+            ],
+            spacing=8,
         )
+        next_btn.disabled = not state.latest_has_more
         next_btn.tab_index = num_cards + 4
-        next_btn.on_focus = lambda e: _style_focusable(e.control, True)
-        next_btn.on_blur = lambda e: _style_focusable(e.control, False)
 
         nav_row = ft.Row(
-            controls=[prev_btn, ft.Text(f"Page {state.latest_page}", color=ft.Colors.ON_SURFACE, weight=ft.FontWeight.W_500), next_btn],
+            controls=[prev_btn, loading_spinner, ft.Text(f"Page {state.latest_page}", color=ft.Colors.ON_SURFACE, weight=ft.FontWeight.W_500), next_btn],
             alignment=ft.MainAxisAlignment.CENTER,
             spacing=16,
         )
@@ -236,7 +228,14 @@ def build_home_view(
         page_obj.update()
 
     def handle_theme_toggle(e):
+        theme_btn.disabled = True
+        page_obj.update()
         page_obj.theme_mode = ft.ThemeMode.LIGHT if page_obj.theme_mode == ft.ThemeMode.DARK else ft.ThemeMode.DARK
+        theme_btn.content = ft.Icon(
+            ft.Icons.LIGHT_MODE_ROUNDED if page_obj.theme_mode == ft.ThemeMode.DARK else ft.Icons.DARK_MODE_ROUNDED,
+            color=ft.Colors.ON_SURFACE,
+        )
+        theme_btn.disabled = False
         page_obj.update()
 
     def _on_focus_btn(e):
@@ -321,6 +320,42 @@ def build_home_view(
             alignment=ft.MainAxisAlignment.SPACE_BETWEEN,
         )
     )
+
+    prev_btn = ft.Container(
+        content=ft.Row(
+            [
+                ft.Icon(ft.Icons.ARROW_BACK_IOS_NEW_ROUNDED, color=ft.Colors.ON_SURFACE_VARIANT),
+                ft.Text("Previous", color=ft.Colors.ON_SURFACE_VARIANT),
+            ],
+            spacing=8,
+        ),
+        padding=ft.Padding(15, 10, 15, 10),
+        border_radius=10,
+        border=ft.Border.all(1.5, AppColors.PRIMARY),
+        ink=True,
+        on_click=on_prev_page,
+    )
+    prev_btn.tab_index = 3
+    prev_btn.on_focus = lambda e: _style_focusable(e.control, True)
+    prev_btn.on_blur = lambda e: _style_focusable(e.control, False)
+
+    next_btn = ft.Container(
+        content=ft.Row(
+            [
+                ft.Text("Next", color=ft.Colors.ON_SURFACE_VARIANT),
+                ft.Icon(ft.Icons.ARROW_FORWARD_IOS_ROUNDED, color=ft.Colors.ON_SURFACE_VARIANT),
+            ],
+            spacing=8,
+        ),
+        padding=ft.Padding(15, 10, 15, 10),
+        border_radius=10,
+        border=ft.Border.all(1.5, AppColors.PRIMARY),
+        ink=True,
+        on_click=on_next_page,
+    )
+    next_btn.tab_index = 4
+    next_btn.on_focus = lambda e: _style_focusable(e.control, True)
+    next_btn.on_blur = lambda e: _style_focusable(e.control, False)
 
     scroll_content = ft.Column(
         controls=[header, latest_grid],

@@ -111,6 +111,8 @@ async def main(page: ft.Page):
     state.cache = cache
     state.active_category = DEFAULT_CATEGORY
 
+    _loading_tasks = {}
+
     def handle_global_back():
         if len(page.views) > 1:
             top_view = page.views[-1]
@@ -131,58 +133,85 @@ async def main(page: ft.Page):
         await page.push_route(route)
 
     async def load_latest(page_num: int = 1):
+        task_key = f"latest_{page_num}"
+        if task_key in _loading_tasks:
+            return
+        _loading_tasks[task_key] = True
+
         state.is_loading = True
         state.latest_page = page_num
         if hasattr(page, "update_home_grid"):
             page.update_home_grid()
-        page.update()
+        else:
+            page.update()
 
         results, has_more = scraper.latest_releases(page_num, state.active_category)
         state.latest_releases = results
         state.latest_has_more = has_more
         state.is_loading = False
+        _loading_tasks.pop(task_key, None)
         if hasattr(page, "update_home_grid"):
             page.update_home_grid()
-        page.update()
+        else:
+            page.update()
 
     async def load_search(query: str):
+        task_key = f"search_{query}"
+        if task_key in _loading_tasks:
+            return
+        _loading_tasks[task_key] = True
+
         state.is_loading = True
         state.search_query = query
         if hasattr(page, "refresh_search_results"):
             page.refresh_search_results()
-        page.update()
+        else:
+            page.update()
 
         results, has_more = scraper.search(query, 1)
         state.search_results = results
         state.search_has_more = has_more
         state.is_loading = False
+        _loading_tasks.pop(task_key, None)
         if hasattr(page, "refresh_search_results"):
             page.refresh_search_results()
-        page.update()
+        else:
+            page.update()
 
     async def load_episodes(content_id: int, page_num: int = 1):
+        task_key = f"episodes_{content_id}_{page_num}"
+        if task_key in _loading_tasks:
+            return
+        _loading_tasks[task_key] = True
+
         state.is_loading = True
         state.episodes_page = page_num
         if hasattr(page, "refresh_episodes"):
             page.refresh_episodes()
-        page.update()
+        else:
+            page.update()
 
         episodes = scraper.episodes(content_id)
         state.episodes = episodes
         state.episodes_has_more = False
         state.is_loading = False
+        _loading_tasks.pop(task_key, None)
         if hasattr(page, "refresh_episodes"):
             page.refresh_episodes()
-        page.update()
+        else:
+            page.update()
 
     async def play_episode(content: Content, episode_index: int):
-        page.snack_bar = ft.SnackBar(ft.Text("Resolving stream..."))
-        page.snack_bar.open = True
+        state.is_loading = True
+        if hasattr(page, "update_home_grid"):
+            page.update_home_grid()
         page.update()
 
         episode = state.episodes[episode_index]
 
         source = scraper.resolve_episode(episode.downloadwella_url)
+        state.is_loading = False
+
         if not source:
             page.snack_bar = ft.SnackBar(ft.Text("Could not resolve stream."), bgcolor=AppColors.ERROR)
             page.snack_bar.open = True

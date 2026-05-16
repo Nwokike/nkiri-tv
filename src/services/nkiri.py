@@ -1,6 +1,7 @@
 import re
-import requests
+import json
 import time
+import requests
 from bs4 import BeautifulSoup
 from core.config import NKIRI_API, CATEGORIES
 from core.state import Content, Episode, Source
@@ -12,27 +13,33 @@ class NkiriScraper:
         self.session.headers.update({
             "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
         })
-        self._cache = {}
-        self._cache_ttl = {}
+        self._mem_cache = {}
+        self._mem_ttl = {}
         self._resolve_cache = {}
 
-    def _get_cached(self, key: str, ttl: int = 300):
-        if key in self._cache and key in self._cache_ttl:
-            if time.time() < self._cache_ttl[key]:
-                return self._cache[key]
-            del self._cache[key]
-            del self._cache_ttl[key]
+    def _get_mem(self, key: str, ttl: int = 300):
+        if key in self._mem_cache and key in self._mem_ttl:
+            if time.time() < self._mem_ttl[key]:
+                return self._mem_cache[key]
+            del self._mem_cache[key]
+            del self._mem_ttl[key]
         return None
 
-    def _set_cached(self, key: str, value, ttl: int = 300):
-        self._cache[key] = value
-        self._cache_ttl[key] = time.time() + ttl
+    def _set_mem(self, key: str, value, ttl: int = 300):
+        self._mem_cache[key] = value
+        self._mem_ttl[key] = time.time() + ttl
 
     @staticmethod
-    def _clean_title(raw_title: str) -> tuple[str, str]:
+    def _clean_title(raw_title: str) -> tuple[str, str, str]:
         title = BeautifulSoup(raw_title, "html.parser").get_text(strip=True)
         title = re.sub(r'\s*\|\s*.*$', '', title).strip()
         title = re.sub(r'\s*Download\s*.*$', '', title, flags=re.IGNORECASE).strip()
+
+        year_match = re.search(r'\((\d{4})\)', title)
+        year = year_match.group(1) if year_match else ""
+        if year:
+            title = title.replace(f"({year})", "").strip()
+            title = re.sub(r'\s*[-–—]\s*$', '', title).strip()
 
         content_type = "series"
         lower = title.lower()
@@ -40,9 +47,6 @@ class NkiriScraper:
             content_type = "movie"
         elif any(kw in lower for kw in ["s01", "s02", "s03", "s04", "s05", "s06", "s07", "s08", "s09", "s10", "season", "episode"]):
             content_type = "series"
-
-        year_match = re.search(r'\((\d{4})\)', title)
-        year = year_match.group(1) if year_match else ""
 
         return title, year, content_type
 
@@ -128,7 +132,7 @@ class NkiriScraper:
 
     def latest_releases(self, page: int = 1, category: str = "TV Series") -> tuple[list[Content], bool]:
         cache_key = f"latest_{category}_{page}"
-        cached = self._get_cached(cache_key)
+        cached = self._get_mem(cache_key)
         if cached:
             return cached
 
@@ -183,12 +187,12 @@ class NkiriScraper:
 
         has_more = len(posts) == 12
         result = (results, has_more)
-        self._set_cached(cache_key, result, ttl=300)
+        self._set_mem(cache_key, result, ttl=300)
         return result
 
     def search(self, query: str, page: int = 1) -> tuple[list[Content], bool]:
         cache_key = f"search_{query}_{page}"
-        cached = self._get_cached(cache_key, ttl=600)
+        cached = self._get_mem(cache_key, ttl=600)
         if cached:
             return cached
 
@@ -235,12 +239,12 @@ class NkiriScraper:
 
         has_more = len(posts) == 12
         result = (results, has_more)
-        self._set_cached(cache_key, result, ttl=600)
+        self._set_mem(cache_key, result, ttl=600)
         return result
 
     def episodes(self, nkiri_id: int) -> list[Episode]:
         cache_key = f"episodes_{nkiri_id}"
-        cached = self._get_cached(cache_key, ttl=3600)
+        cached = self._get_mem(cache_key, ttl=3600)
         if cached:
             return cached
 
@@ -255,7 +259,7 @@ class NkiriScraper:
 
         content_html = post.get("content", {}).get("rendered", "")
         result = self._parse_episodes(content_html)
-        self._set_cached(cache_key, result, ttl=3600)
+        self._set_mem(cache_key, result, ttl=3600)
         return result
 
     def resolve_episode(self, downloadwella_url: str) -> Source | None:
@@ -311,8 +315,8 @@ class NkiriScraper:
             return None
 
     def clear_cache(self):
-        self._cache.clear()
-        self._cache_ttl.clear()
+        self._mem_cache.clear()
+        self._mem_ttl.clear()
 
     def close(self):
         self.session.close()

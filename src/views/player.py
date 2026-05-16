@@ -45,6 +45,8 @@ def build_player_view(
     )
 
     def on_back(e):
+        back_btn.disabled = True
+        page_obj.update()
         if len(page_obj.views) > 1:
             page_obj.views.pop()
             page_obj.update()

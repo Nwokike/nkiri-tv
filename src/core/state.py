@@ -1,5 +1,5 @@
 import flet as ft
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 
 @dataclass
@@ -11,8 +11,8 @@ class Content:
     rating: str
     description: str
     nkiri_id: int
-    categories: list[str]
-    content_type: str  # "movie" or "series"
+    categories: list[str] = field(default_factory=list)
+    content_type: str = ""
 
 
 @dataclass
@@ -32,19 +32,19 @@ class Episode:
 class Source:
     url: str
     quality: str
-    size: str
+    size: str = ""
 
 
 @ft.observable
 class AppState:
     is_loading: bool = False
     search_query: str = ""
-    search_results: list[Content] = []
-    latest_releases: list[Content] = []
+    search_results: list[Content] = field(default_factory=list)
+    latest_releases: list[Content] = field(default_factory=list)
     latest_page: int = 1
     latest_has_more: bool = True
     search_has_more: bool = True
-    episodes: list[Episode] = []
+    episodes: list[Episode] = field(default_factory=list)
     episodes_has_more: bool = True
     episodes_page: int = 1
     selected_source: Source | None = None
@@ -52,10 +52,8 @@ class AppState:
     current_episode_index: int = 0
     player_error: str | None = None
     active_category: str = "TV Series"
-
-    def __init__(self):
-        self.search_results = []
-        self.episodes = []
+    scraper: object | None = None
+    cache: object | None = None
 
 
 state = AppState()
