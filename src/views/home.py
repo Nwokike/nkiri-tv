@@ -256,22 +256,17 @@ def build_home_view(
 
     category_chips = ft.Container(
         padding=ft.Padding.only(left=24, right=24, top=8, bottom=8),
-        content=ft.ListView(
+        content=ft.Row(
             controls=[
-                ft.Row(
-                    controls=[
-                        ft.Chip(
-                            label=ft.Text(cat, size=13),
-                            selected=state.active_category == cat,
-                            on_select=lambda e, c=cat: on_chip_selected(c),
-                        )
-                        for cat in CATEGORIES.keys()
-                    ],
-                    spacing=8,
+                ft.Chip(
+                    label=ft.Text(cat, size=13),
+                    selected=state.active_category == cat,
+                    on_select=lambda e, c=cat: on_chip_selected(c),
                 )
+                for cat in CATEGORIES.keys()
             ],
-            scroll_mode=ft.ScrollMode.AUTO,
-            height=40,
+            spacing=8,
+            scroll=True,
         ),
     )
 
