@@ -1,14 +1,8 @@
 import re
 import httpx
 from bs4 import BeautifulSoup
-from core.config import NKIRI_API, NKIRI_CATEGORY_TV_SERIES, NKIRI_CATEGORY_INTERNATIONAL, NKIRI_CATEGORY_KDRAMA
-from core.state import Series, Episode, Source
-
-CATEGORIES = {
-    "TV Series": NKIRI_CATEGORY_TV_SERIES,
-    "International": NKIRI_CATEGORY_INTERNATIONAL,
-    "K-Drama": NKIRI_CATEGORY_KDRAMA,
-}
+from core.config import NKIRI_API, CATEGORIES
+from core.state import Content, Episode, Source
 
 
 class NkiriScraper:
@@ -21,7 +15,26 @@ class NkiriScraper:
             timeout=30,
         )
 
-    def _parse_poster(self, content_html: str, featured_media: list | None = None) -> str:
+    @staticmethod
+    def _clean_title(raw_title: str) -> tuple[str, str]:
+        title = BeautifulSoup(raw_title, "html.parser").get_text(strip=True)
+        title = re.sub(r'\s*\|\s*.*$', '', title).strip()
+        title = re.sub(r'\s*Download\s*.*$', '', title, flags=re.IGNORECASE).strip()
+
+        content_type = "series"
+        lower = title.lower()
+        if any(kw in lower for kw in ["movie", "film"]):
+            content_type = "movie"
+        elif any(kw in lower for kw in ["s01", "s02", "s03", "s04", "s05", "s06", "s07", "s08", "s09", "s10", "season", "episode"]):
+            content_type = "series"
+
+        year_match = re.search(r'\((\d{4})\)', title)
+        year = year_match.group(1) if year_match else ""
+
+        return title, year, content_type
+
+    @staticmethod
+    def _parse_poster(content_html: str, featured_media: list | None = None) -> str:
         if featured_media:
             for media in featured_media:
                 if isinstance(media, dict) and media.get("source_url"):
@@ -33,15 +46,8 @@ class NkiriScraper:
                 return src
         return ""
 
-    def _parse_year(self, content_html: str) -> str:
-        patterns = [r'\((\d{4})\)', r'(\d{4})\s*[-–]']
-        for pattern in patterns:
-            match = re.search(pattern, content_html)
-            if match:
-                return match.group(1)
-        return ""
-
-    def _parse_rating(self, content_html: str) -> str:
+    @staticmethod
+    def _parse_rating(content_html: str) -> str:
         patterns = [r'IMDb[:\s]*([0-9.]+)', r'Rating[:\s]*([0-9.]+)']
         for pattern in patterns:
             match = re.search(pattern, content_html, re.IGNORECASE)
@@ -49,7 +55,8 @@ class NkiriScraper:
                 return match.group(1)
         return ""
 
-    def _parse_description(self, content_html: str) -> str:
+    @staticmethod
+    def _parse_description(content_html: str) -> str:
         soup = BeautifulSoup(content_html, "html.parser")
         for tag in ["p", "div"]:
             for el in soup.find_all(tag):
@@ -106,13 +113,13 @@ class NkiriScraper:
 
         return episodes
 
-    def latest_releases(self, page: int = 1, category: str = "TV Series") -> tuple[list[Series], bool]:
-        cat_id = CATEGORIES.get(category, NKIRI_CATEGORY_TV_SERIES)
+    def latest_releases(self, page: int = 1, category: str = "TV Series") -> tuple[list[Content], bool]:
+        cat_id = CATEGORIES.get(category, CATEGORIES["TV Series"])
         resp = self.client.get(
             f"{NKIRI_API}/posts",
             params={
                 "categories": cat_id,
-                "per_page": 20,
+                "per_page": 10,
                 "page": page,
                 "orderby": "date",
                 "order": "desc",
@@ -129,23 +136,21 @@ class NkiriScraper:
 
         results = []
         for post in posts:
-            content = post.get("content", {}).get("rendered", "")
-            title = post.get("title", {}).get("rendered", "")
-            title = BeautifulSoup(title, "html.parser").get_text(strip=True)
-            title = re.sub(r'\s*\|\s*(TV Series|Movie|K-Drama)\s*$', '', title, flags=re.IGNORECASE).strip()
+            content_html = post.get("content", {}).get("rendered", "")
+            raw_title = post.get("title", {}).get("rendered", "")
+            title, year, content_type = self._clean_title(raw_title)
 
             featured = post.get("_embedded", {}).get("wp:featuredmedia", [])
-            poster = self._parse_poster(content, featured)
-            year = self._parse_year(title)
-            rating = self._parse_rating(content)
-            description = self._parse_description(content)
+            poster = self._parse_poster(content_html, featured)
+            rating = self._parse_rating(content_html)
+            description = self._parse_description(content_html)
 
             categories = []
             for cat in post.get("_embedded", {}).get("wp:term", [[]])[0]:
                 if isinstance(cat, dict) and cat.get("taxonomy") == "category":
                     categories.append(cat.get("name", ""))
 
-            results.append(Series(
+            results.append(Content(
                 id=post.get("id", 0),
                 title=title,
                 poster=poster,
@@ -154,17 +159,18 @@ class NkiriScraper:
                 description=description,
                 nkiri_id=post.get("id", 0),
                 categories=categories,
+                content_type=content_type,
             ))
 
-        has_more = len(posts) == 20
+        has_more = len(posts) == 10 and resp.headers.get("X-WP-TotalPages", "1") != str(page)
         return results, has_more
 
-    def search(self, query: str, page: int = 1) -> tuple[list[Series], bool]:
+    def search(self, query: str, page: int = 1) -> tuple[list[Content], bool]:
         resp = self.client.get(
             f"{NKIRI_API}/posts",
             params={
                 "search": query,
-                "per_page": 20,
+                "per_page": 10,
                 "page": page,
                 "_embed": 1,
             },
@@ -179,18 +185,16 @@ class NkiriScraper:
 
         results = []
         for post in posts:
-            content = post.get("content", {}).get("rendered", "")
-            title = post.get("title", {}).get("rendered", "")
-            title = BeautifulSoup(title, "html.parser").get_text(strip=True)
-            title = re.sub(r'\s*\|\s*(TV Series|Movie|K-Drama)\s*$', '', title, flags=re.IGNORECASE).strip()
+            content_html = post.get("content", {}).get("rendered", "")
+            raw_title = post.get("title", {}).get("rendered", "")
+            title, year, content_type = self._clean_title(raw_title)
 
             featured = post.get("_embedded", {}).get("wp:featuredmedia", [])
-            poster = self._parse_poster(content, featured)
-            year = self._parse_year(title)
-            rating = self._parse_rating(content)
-            description = self._parse_description(content)
+            poster = self._parse_poster(content_html, featured)
+            rating = self._parse_rating(content_html)
+            description = self._parse_description(content_html)
 
-            results.append(Series(
+            results.append(Content(
                 id=post.get("id", 0),
                 title=title,
                 poster=poster,
@@ -199,9 +203,10 @@ class NkiriScraper:
                 description=description,
                 nkiri_id=post.get("id", 0),
                 categories=[],
+                content_type=content_type,
             ))
 
-        has_more = len(posts) == 20
+        has_more = len(posts) == 10
         return results, has_more
 
     def episodes(self, nkiri_id: int) -> list[Episode]:
@@ -214,8 +219,8 @@ class NkiriScraper:
         except Exception:
             return []
 
-        content = post.get("content", {}).get("rendered", "")
-        return self._parse_episodes(content)
+        content_html = post.get("content", {}).get("rendered", "")
+        return self._parse_episodes(content_html)
 
     def resolve_episode(self, downloadwella_url: str) -> Source | None:
         try:

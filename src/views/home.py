@@ -1,14 +1,14 @@
 import flet as ft
-from core.state import state, Series
+from core.state import state, Content
 from core.theme import AppColors
+from core.config import CATEGORIES
 
 
 def build_home_view(
     page_obj: ft.Page,
     on_load_latest,
-    on_select_series,
+    on_select_content,
     on_search_click,
-    on_category_change=None,
 ) -> ft.View:
 
     CARD_HEIGHT = 140
@@ -33,9 +33,9 @@ def build_home_view(
             container.shadow = None
         container.update()
 
-    def build_card(series: Series, idx: int):
+    def build_card(content: Content, idx: int):
         img = ft.Image(
-            src=series.poster if series.poster else "https://via.placeholder.com/300x450?text=No+Poster",
+            src=content.poster if content.poster else "https://via.placeholder.com/300x450?text=No+Poster",
             fit="cover",
             expand=True,
         )
@@ -53,7 +53,7 @@ def build_home_view(
         )
 
         title_text = ft.Text(
-            series.title,
+            content.title,
             color=ft.Colors.WHITE,
             weight=ft.FontWeight.BOLD,
             size=14,
@@ -61,14 +61,14 @@ def build_home_view(
             overflow=ft.TextOverflow.ELLIPSIS,
         )
 
-        year_text = ft.Text(
-            series.year,
+        meta_text = ft.Text(
+            content.year,
             color=AppColors.PRIMARY,
             weight=ft.FontWeight.BOLD,
             size=12,
         )
 
-        content = ft.Stack(
+        content_stack = ft.Stack(
             controls=[
                 img,
                 gradient,
@@ -76,7 +76,7 @@ def build_home_view(
                     padding=12,
                     alignment=ft.Alignment.BOTTOM_LEFT,
                     content=ft.Column(
-                        [title_text, year_text],
+                        [title_text, meta_text],
                         alignment=ft.MainAxisAlignment.END,
                         spacing=4,
                     )
@@ -86,7 +86,7 @@ def build_home_view(
         )
 
         card_container = ft.Container(
-            content=content,
+            content=content_stack,
             border_radius=12,
             clip_behavior="antiAlias",
             animate_scale=300,
@@ -94,7 +94,7 @@ def build_home_view(
             ink=True,
             height=CARD_HEIGHT,
             key=f"home_card_{idx}",
-            on_click=lambda _: on_select_series(series),
+            on_click=lambda _: on_select_content(content),
             on_hover=lambda e: on_hover_card(e, card_container),
         )
         card_container.tab_index = idx + 10
@@ -254,19 +254,24 @@ def build_home_view(
         page_obj.update()
         page_obj.run_task(on_load_latest, 1)
 
-    categories = ["TV Series", "International", "K-Drama"]
     category_chips = ft.Container(
         padding=ft.Padding.only(left=24, right=24, top=8, bottom=8),
-        content=ft.Row(
+        content=ft.ListView(
             controls=[
-                ft.Chip(
-                    label=ft.Text(cat, size=13),
-                    selected=state.active_category == cat,
-                    on_select=lambda e, c=cat: on_chip_selected(c),
+                ft.Row(
+                    controls=[
+                        ft.Chip(
+                            label=ft.Text(cat, size=13),
+                            selected=state.active_category == cat,
+                            on_select=lambda e, c=cat: on_chip_selected(c),
+                        )
+                        for cat in CATEGORIES.keys()
+                    ],
+                    spacing=8,
                 )
-                for cat in categories
             ],
-            spacing=8,
+            scroll_mode=ft.ScrollMode.AUTO,
+            height=40,
         ),
     )
 
@@ -302,7 +307,7 @@ def build_home_view(
                 ft.Row(
                     controls=[
                         ft.Image(src="icon.png", width=32, height=32, fit="contain"),
-                        ft.Text("Series TV", size=24, weight=ft.FontWeight.BOLD),
+                        ft.Text("Nkiri TV", size=24, weight=ft.FontWeight.BOLD),
                     ],
                     spacing=12,
                 ),

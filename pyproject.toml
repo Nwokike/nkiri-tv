@@ -1,7 +1,7 @@
 [project]
-name = "series-tv"
+name = "nkiri-tv"
 version = "0.1.0"
-description = "Lightweight client-side Android TV / mobile / desktop app for streaming TV series from Nkiri."
+description = "Lightweight client-side Android TV / mobile / desktop app for streaming movies and series from Nkiri."
 readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
@@ -13,15 +13,15 @@ dependencies = [
 ]
 
 [tool.flet]
-org = "com.seriestv"
-product = "Series TV"
+org = "com.nkiritv"
+product = "Nkiri TV"
 build_number = 1
 
 [tool.flet.app]
 path = "src"
 
 [tool.flet.android]
-bundle_id = "com.seriestv.app"
+bundle_id = "com.nkiritv.app"
 
 [tool.flet.android.permission]
 "android.permission.INTERNET" = true

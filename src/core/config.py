@@ -24,7 +24,19 @@ EXTERNAL_PLAYER_NAMES = [
 NKIRI_BASE_URL = "https://thenkiri.com"
 NKIRI_API = f"{NKIRI_BASE_URL}/wp-json/wp/v2"
 
-# Nkiri category IDs
-NKIRI_CATEGORY_TV_SERIES = 4
-NKIRI_CATEGORY_INTERNATIONAL = 5
-NKIRI_CATEGORY_KDRAMA = 14
+# All Nkiri categories organized by section
+CATEGORIES = {
+    "TV Series": 4,
+    "International": 14,
+    "K-Drama": 108,
+    "Korean Movies": 98,
+    "Asian Movies": 97,
+    "Bollywood": 83,
+    "Chinese Movies": 113,
+    "Philippine Movies": 99,
+    "K-Variety": 149,
+    "Chinese Dramas": 135,
+}
+
+# Default category on first launch
+DEFAULT_CATEGORY = "TV Series"

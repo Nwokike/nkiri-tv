@@ -1,12 +1,12 @@
 import flet as ft
-from core.state import state, Series
+from core.state import state, Content
 from core.theme import AppColors
 
 
 def build_search_view(
     page_obj: ft.Page,
     on_search,
-    on_select_series,
+    on_select_content,
     on_back,
 ) -> ft.View:
 
@@ -31,9 +31,9 @@ def build_search_view(
             container.shadow = None
         container.update()
 
-    def build_card(series: Series, idx: int):
+    def build_card(content: Content, idx: int):
         img = ft.Image(
-            src=series.poster if series.poster else "https://via.placeholder.com/300x450?text=No+Poster",
+            src=content.poster if content.poster else "https://via.placeholder.com/300x450?text=No+Poster",
             fit="cover",
             expand=True,
         )
@@ -51,7 +51,7 @@ def build_search_view(
         )
 
         title_text = ft.Text(
-            series.title,
+            content.title,
             color=ft.Colors.WHITE,
             weight=ft.FontWeight.BOLD,
             size=14,
@@ -59,14 +59,14 @@ def build_search_view(
             overflow=ft.TextOverflow.ELLIPSIS,
         )
 
-        year_text = ft.Text(
-            series.year,
+        meta_text = ft.Text(
+            content.year,
             color=AppColors.PRIMARY,
             weight=ft.FontWeight.BOLD,
             size=12,
         )
 
-        content = ft.Stack(
+        content_stack = ft.Stack(
             controls=[
                 img,
                 gradient,
@@ -74,7 +74,7 @@ def build_search_view(
                     padding=12,
                     alignment=ft.Alignment.BOTTOM_LEFT,
                     content=ft.Column(
-                        [title_text, year_text],
+                        [title_text, meta_text],
                         alignment=ft.MainAxisAlignment.END,
                         spacing=4,
                     )
@@ -84,7 +84,7 @@ def build_search_view(
         )
 
         card_container = ft.Container(
-            content=content,
+            content=content_stack,
             border_radius=12,
             clip_behavior="antiAlias",
             animate_scale=300,
@@ -92,7 +92,7 @@ def build_search_view(
             ink=True,
             height=CARD_HEIGHT,
             key=f"search_card_{idx}",
-            on_click=lambda _: on_select_series(series),
+            on_click=lambda _: on_select_content(content),
             on_hover=lambda e: on_hover_card(e, card_container),
         )
         card_container.tab_index = idx + 10
@@ -153,7 +153,7 @@ def build_search_view(
                 ft.Container(
                     expand=True,
                     alignment=ft.Alignment.CENTER,
-                    content=ft.Text("Search for TV series...", color=ft.Colors.ON_SURFACE_VARIANT, size=16)
+                    content=ft.Text("Search movies, series, dramas...", color=ft.Colors.ON_SURFACE_VARIANT, size=16)
                 )
             ]
         else:
@@ -176,7 +176,7 @@ def build_search_view(
             pass
 
     search_field = ft.TextField(
-        hint_text="Search TV series...",
+        hint_text="Search movies, series...",
         expand=True,
         border=ft.InputBorder.OUTLINED,
         border_radius=10,

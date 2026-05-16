@@ -4,15 +4,15 @@ import base64
 import urllib.parse
 
 from core.theme import AppTheme, AppColors
-from core.state import state, Series
-from core.config import USE_EXTERNAL_PLAYER, KTV_PLAY_STORE_URL, KTV_UPTODOWN_URL, KTV_DEEP_LINK_SCHEME, EXTERNAL_PLAYER_NAMES
+from core.state import state, Content
+from core.config import USE_EXTERNAL_PLAYER, KTV_PLAY_STORE_URL, KTV_UPTODOWN_URL, KTV_DEEP_LINK_SCHEME, EXTERNAL_PLAYER_NAMES, DEFAULT_CATEGORY
 from core.focus_manager import FocusManager
 from services.nkiri import NkiriScraper
 from services.cache import Cache
 from views.splash import build_splash_view
 from views.home import build_home_view
 from views.search import build_search_view
-from views.series_detail import build_series_detail_view
+from views.content_detail import build_content_detail_view
 from views.player import build_player_view
 
 
@@ -79,7 +79,7 @@ def show_ktv_install_dialog(page: ft.Page):
 
 
 async def main(page: ft.Page):
-    page.title = "Series TV"
+    page.title = "Nkiri TV"
     page.padding = 0
     page.spacing = 0
 
@@ -109,6 +109,7 @@ async def main(page: ft.Page):
 
     state.scraper = scraper
     state.cache = cache
+    state.active_category = DEFAULT_CATEGORY
 
     def handle_global_back():
         if len(page.views) > 1:
@@ -116,8 +117,8 @@ async def main(page: ft.Page):
             route = getattr(top_view, "route", "")
 
             if route.startswith("/play"):
-                page.run_task(navigate, "/series/" + str(state.current_series_id))
-            elif route.startswith("/series"):
+                page.run_task(navigate, "/content/" + str(state.current_content_id))
+            elif route.startswith("/content"):
                 page.run_task(navigate, "/home")
             elif route == "/search":
                 page.run_task(navigate, "/home")
@@ -159,13 +160,13 @@ async def main(page: ft.Page):
             page.refresh_search_results()
         page.update()
 
-    async def load_episodes(series_id: int):
+    async def load_episodes(content_id: int):
         state.is_loading = True
         if hasattr(page, "refresh_episodes"):
             page.refresh_episodes()
         page.update()
 
-        episodes = scraper.episodes(series_id)
+        episodes = scraper.episodes(content_id)
         state.episodes = episodes
         state.episodes_has_more = False
         state.is_loading = False
@@ -173,7 +174,7 @@ async def main(page: ft.Page):
             page.refresh_episodes()
         page.update()
 
-    async def play_episode(series: Series, episode_index: int):
+    async def play_episode(content: Content, episode_index: int):
         page.snack_bar = ft.SnackBar(ft.Text("Resolving stream..."))
         page.snack_bar.open = True
         page.update()
@@ -188,7 +189,7 @@ async def main(page: ft.Page):
             return
 
         state.selected_source = source
-        state.current_series_id = series.nkiri_id
+        state.current_content_id = content.nkiri_id
         state.current_episode_index = episode_index
 
         if USE_EXTERNAL_PLAYER:
@@ -227,7 +228,7 @@ async def main(page: ft.Page):
                 build_home_view(
                     page_obj=page,
                     on_load_latest=load_latest,
-                    on_select_series=lambda s: page.run_task(navigate, f"/series/{s.nkiri_id}"),
+                    on_select_content=lambda c: page.run_task(navigate, f"/content/{c.nkiri_id}"),
                     on_search_click=lambda: page.run_task(navigate, "/search"),
                 )
             )
@@ -237,27 +238,27 @@ async def main(page: ft.Page):
                 build_search_view(
                     page_obj=page,
                     on_search=load_search,
-                    on_select_series=lambda s: page.run_task(navigate, f"/series/{s.nkiri_id}"),
+                    on_select_content=lambda c: page.run_task(navigate, f"/content/{c.nkiri_id}"),
                     on_back=lambda: page.run_task(navigate, "/home"),
                 )
             )
 
-        elif parsed.path.startswith("/series/"):
-            series_id = int(parsed.path.split("/")[-1])
-            matching = [s for s in state.latest_releases if s.nkiri_id == series_id]
-            series_obj = matching[0] if matching else Series(
-                id=series_id, title="Loading...", poster="", year="", rating="",
-                description="", nkiri_id=series_id, categories=[],
+        elif parsed.path.startswith("/content/"):
+            content_id = int(parsed.path.split("/")[-1])
+            matching = [c for c in state.latest_releases if c.nkiri_id == content_id]
+            content_obj = matching[0] if matching else Content(
+                id=content_id, title="Loading...", poster="", year="", rating="",
+                description="", nkiri_id=content_id, categories=[], content_type="",
             )
             page.views.append(
-                build_series_detail_view(
+                build_content_detail_view(
                     page_obj=page,
-                    series=series_obj,
+                    series=content_obj,
                     on_load_episodes=load_episodes,
                     on_play_episode=play_episode,
                 )
             )
-            page.run_task(load_episodes, series_id)
+            page.run_task(load_episodes, content_id)
 
         elif parsed.path == "/play":
             try:

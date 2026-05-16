@@ -21,14 +21,14 @@ def build_splash_view() -> ft.View:
                         ),
                         ft.Container(height=16),
                         ft.Text(
-                            "Series TV",
+                            "Nkiri TV",
                             size=32,
                             weight=ft.FontWeight.BOLD,
                             color=ft.Colors.ON_SURFACE,
                             text_align=ft.TextAlign.CENTER,
                         ),
                         ft.Text(
-                            "Watch TV series. No server needed.",
+                            "Movies, Series & Dramas. No server needed.",
                             size=14,
                             color=ft.Colors.ON_SURFACE_VARIANT,
                             text_align=ft.TextAlign.CENTER,

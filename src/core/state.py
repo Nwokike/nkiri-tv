@@ -3,15 +3,16 @@ from dataclasses import dataclass
 
 
 @dataclass
-class Series:
+class Content:
     id: int
     title: str
     poster: str
     year: str
     rating: str
     description: str
-    nkiri_id: int  # WordPress post ID
+    nkiri_id: int
     categories: list[str]
+    content_type: str  # "movie" or "series"
 
 
 @dataclass
@@ -21,16 +22,16 @@ class Episode:
     season: str
     episode_number: int
     thumbnail: str
-    downloadwella_url: str  # URL to downloadwella page
-    direct_url: str = ""  # Resolved direct .mkv URL
+    downloadwella_url: str
+    direct_url: str = ""
     size: str = ""
     date: str = ""
 
 
 @dataclass
 class Source:
-    url: str  # Direct .mkv URL
-    quality: str  # e.g., "720p", "1080p"
+    url: str
+    quality: str
     size: str
 
 
@@ -38,15 +39,15 @@ class Source:
 class AppState:
     is_loading: bool = False
     search_query: str = ""
-    search_results: list[Series] = []
-    latest_releases: list[Series] = []
+    search_results: list[Content] = []
+    latest_releases: list[Content] = []
     latest_page: int = 1
     latest_has_more: bool = True
     search_has_more: bool = True
     episodes: list[Episode] = []
     episodes_has_more: bool = True
     selected_source: Source | None = None
-    current_series_id: int = 0
+    current_content_id: int = 0
     current_episode_index: int = 0
     player_error: str | None = None
     active_category: str = "TV Series"

@@ -2,30 +2,30 @@ import flet as ft
 
 
 class AppColors:
-    # Series-TV custom premium palette
-    PRIMARY = "#8B5CF6"  # Violet 500
-    SECONDARY = "#06B6D4"  # Cyan 500
-    SUCCESS = "#10B981"  # Emerald 500
+    # Nkiri-TV premium green cinematic palette
+    PRIMARY = "#10B981"  # Emerald 500 - rich, premium green
+    SECONDARY = "#059669"  # Emerald 600 - deeper green for accents
+    SUCCESS = "#34D399"  # Emerald 400 - lighter green for success
     WARNING = "#F59E0B"  # Amber 500
     ERROR = "#EF4444"  # Red 500
 
     # Dark Mode
-    DARK_BG = "#0B0F19"
-    DARK_SURFACE = "#111827"
-    DARK_SURFACE_VARIANT = "#1F2937"
-    DARK_TEXT = "#F9FAFB"
-    DARK_TEXT_DIM = "#9CA3AF"
-    DARK_TEXT_MUTED = "#6B7280"
+    DARK_BG = "#0A0F0D"
+    DARK_SURFACE = "#111814"
+    DARK_SURFACE_VARIANT = "#1A2320"
+    DARK_TEXT = "#F0FDF4"
+    DARK_TEXT_DIM = "#A7C4B5"
+    DARK_TEXT_MUTED = "#6B8A7A"
 
     # Light Mode
-    LIGHT_BG = "#F8FAFC"
+    LIGHT_BG = "#F0FDF4"
     LIGHT_SURFACE = "#FFFFFF"
-    LIGHT_SURFACE_VARIANT = "#F1F5F9"
-    LIGHT_TEXT = "#0F172A"
-    LIGHT_TEXT_DIM = "#64748B"
-    LIGHT_TEXT_MUTED = "#94A3B8"
+    LIGHT_SURFACE_VARIANT = "#ECFDF5"
+    LIGHT_TEXT = "#022C22"
+    LIGHT_TEXT_DIM = "#4D7C5F"
+    LIGHT_TEXT_MUTED = "#84A98C"
 
-    SPLASH_BG = "#0B0F19"
+    SPLASH_BG = "#0A0F0D"
 
     WHITE = ft.Colors.WHITE
     BLACK = ft.Colors.BLACK
