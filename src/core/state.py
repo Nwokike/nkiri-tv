@@ -39,12 +39,12 @@ class Source:
 class AppState:
     is_loading: bool = False
     search_query: str = ""
-    search_results: list[Content] = field(default_factory=list)
-    latest_releases: list[Content] = field(default_factory=list)
+    search_results: list = None
+    latest_releases: list = None
     latest_page: int = 1
     latest_has_more: bool = True
     search_has_more: bool = True
-    episodes: list[Episode] = field(default_factory=list)
+    episodes: list = None
     episodes_has_more: bool = True
     episodes_page: int = 1
     selected_source: Source | None = None
@@ -54,6 +54,11 @@ class AppState:
     active_category: str = "TV Series"
     scraper: object | None = None
     cache: object | None = None
+
+    def __init__(self):
+        self.search_results = []
+        self.latest_releases = []
+        self.episodes = []
 
 
 state = AppState()
