@@ -23,11 +23,11 @@ Get the latest version of Nkiri TV. If you aren't sure which Android version to 
 
 | Platform | Download | Size | Notes |
 |:--------:|:--------:|:----:|:------|
-| 🤖 **Android (Universal)** | [**nkiri-tv.apk**](https://github.com/Nwokike/nkiri-tv/releases/latest/download/nkiri-tv.apk) | ~120 MB | Works on all Android devices (ARM64, ARMv7, x86_64) |
-| 🤖 **Android (ARM64)** | [**nkiri-tv-arm64-v8a.apk**](https://github.com/Nwokike/nkiri-tv/releases/latest/download/nkiri-tv-arm64-v8a.apk) | ~50 MB | For modern 64-bit Android devices and TVs |
-| 🤖 **Android (ARM32)** | [**nkiri-tv-armeabi-v7a.apk**](https://github.com/Nwokike/nkiri-tv/releases/latest/download/nkiri-tv-armeabi-v7a.apk) | ~45 MB | For older 32-bit Android devices and older Firesticks |
-| 🤖 **Android (x86_64)** | [**nkiri-tv-x86_64.apk**](https://github.com/Nwokike/nkiri-tv/releases/latest/download/nkiri-tv-x86_64.apk) | ~55 MB | For Android emulators / ChromeOS |
-| 🪟 **Windows** | [**Nkiri_TV_Setup.exe**](https://github.com/Nwokike/nkiri-tv/releases/latest/download/Nkiri_TV_Setup.exe) | ~80 MB | Windows 10/11 Installer (64-bit) |
+| 🤖 **Android (Universal)** | [**nkiri-tv.apk**](https://github.com/Nwokike/nkiri-tv/releases/latest/download/nkiri-tv.apk) | ~86 MB | Works on all Android devices (ARM64, ARMv7, x86_64) |
+| 🤖 **Android (ARM64)** | [**nkiri-tv-arm64-v8a.apk**](https://github.com/Nwokike/nkiri-tv/releases/latest/download/nkiri-tv-arm64-v8a.apk) | ~31 MB | For modern 64-bit Android devices and TVs |
+| 🤖 **Android (ARM32)** | [**nkiri-tv-armeabi-v7a.apk**](https://github.com/Nwokike/nkiri-tv/releases/latest/download/nkiri-tv-armeabi-v7a.apk) | ~30 MB | For older 32-bit Android devices and older Firesticks |
+| 🤖 **Android (x86_64)** | [**nkiri-tv-x86_64.apk**](https://github.com/Nwokike/nkiri-tv/releases/latest/download/nkiri-tv-x86_64.apk) | ~32 MB | For Android emulators / ChromeOS |
+| 🪟 **Windows** | [**Nkiri_TV_Setup.exe**](https://github.com/Nwokike/nkiri-tv/releases/latest/download/Nkiri_TV_Setup.exe) | ~36 MB | Windows 10/11 Installer (64-bit) |
 | 🍎 **macOS** | *Coming soon* | — | |
 | 📱 **iOS** | *Coming soon* | — | |
 
