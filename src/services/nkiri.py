@@ -1,5 +1,5 @@
 import re
-import httpx
+import requests
 from bs4 import BeautifulSoup
 from core.config import NKIRI_API, CATEGORIES
 from core.state import Content, Episode, Source
@@ -7,13 +7,10 @@ from core.state import Content, Episode, Source
 
 class NkiriScraper:
     def __init__(self):
-        self.client = httpx.Client(
-            headers={
-                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
-            },
-            follow_redirects=True,
-            timeout=30,
-        )
+        self.session = requests.Session()
+        self.session.headers.update({
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+        })
 
     @staticmethod
     def _clean_title(raw_title: str) -> tuple[str, str]:
@@ -115,16 +112,17 @@ class NkiriScraper:
 
     def latest_releases(self, page: int = 1, category: str = "TV Series") -> tuple[list[Content], bool]:
         cat_id = CATEGORIES.get(category, CATEGORIES["TV Series"])
-        resp = self.client.get(
+        resp = self.session.get(
             f"{NKIRI_API}/posts",
             params={
                 "categories": cat_id,
-                "per_page": 10,
+                "per_page": 5,
                 "page": page,
                 "orderby": "date",
                 "order": "desc",
                 "_embed": 1,
             },
+            timeout=15,
         )
         if resp.status_code != 200:
             return [], False
@@ -162,18 +160,19 @@ class NkiriScraper:
                 content_type=content_type,
             ))
 
-        has_more = len(posts) == 10 and resp.headers.get("X-WP-TotalPages", "1") != str(page)
+        has_more = len(posts) == 5
         return results, has_more
 
     def search(self, query: str, page: int = 1) -> tuple[list[Content], bool]:
-        resp = self.client.get(
+        resp = self.session.get(
             f"{NKIRI_API}/posts",
             params={
                 "search": query,
-                "per_page": 10,
+                "per_page": 5,
                 "page": page,
                 "_embed": 1,
             },
+            timeout=15,
         )
         if resp.status_code != 200:
             return [], False
@@ -206,11 +205,11 @@ class NkiriScraper:
                 content_type=content_type,
             ))
 
-        has_more = len(posts) == 10
+        has_more = len(posts) == 5
         return results, has_more
 
     def episodes(self, nkiri_id: int) -> list[Episode]:
-        resp = self.client.get(f"{NKIRI_API}/posts/{nkiri_id}")
+        resp = self.session.get(f"{NKIRI_API}/posts/{nkiri_id}", timeout=15)
         if resp.status_code != 200:
             return []
 
@@ -229,7 +228,7 @@ class NkiriScraper:
                 return None
             file_id = file_id_match.group(1)
 
-            resp = self.client.post(
+            resp = self.session.post(
                 "https://downloadwella.com/",
                 data={
                     "op": "download2",
@@ -268,4 +267,4 @@ class NkiriScraper:
             return None
 
     def close(self):
-        self.client.close()
+        self.session.close()
