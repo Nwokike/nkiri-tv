@@ -1,7 +1,8 @@
-# Release 0.1.0
+# Release 0.1.0 (initial pre‑release)
 
-- Fixed movie title detection and added proper movie/series classification.
-- Added fallback episode parsing for movies, showing a single download entry.
-- Updated home view category chips to wrap on portrait mobile.
-- Simplified pagination calls and removed unnecessary lambdas.
-- All Ruff checks pass.
+- First public version of **Nkiri TV**.
+- Streams movies, series, and dramas from the Nkiri WordPress API.
+- Cross‑platform UI built with **Flet** (Android, desktop, web).
+- Async HTTP fetching via **httpx** with in‑memory & SQLite caching.
+- Integrated Downloadwella resolver and optional KTV Player deep‑link.
+- Blue‑sky theme with system‑mode support and mobile‑friendly category chips.
