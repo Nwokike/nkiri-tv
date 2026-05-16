@@ -116,7 +116,7 @@ class NkiriScraper:
             f"{NKIRI_API}/posts",
             params={
                 "categories": cat_id,
-                "per_page": 5,
+                "per_page": 12,
                 "page": page,
                 "orderby": "date",
                 "order": "desc",
@@ -160,7 +160,7 @@ class NkiriScraper:
                 content_type=content_type,
             ))
 
-        has_more = len(posts) == 5
+        has_more = len(posts) == 12
         return results, has_more
 
     def search(self, query: str, page: int = 1) -> tuple[list[Content], bool]:
@@ -168,7 +168,7 @@ class NkiriScraper:
             f"{NKIRI_API}/posts",
             params={
                 "search": query,
-                "per_page": 5,
+                "per_page": 12,
                 "page": page,
                 "_embed": 1,
             },
@@ -205,7 +205,7 @@ class NkiriScraper:
                 content_type=content_type,
             ))
 
-        has_more = len(posts) == 5
+        has_more = len(posts) == 12
         return results, has_more
 
     def episodes(self, nkiri_id: int) -> list[Episode]:

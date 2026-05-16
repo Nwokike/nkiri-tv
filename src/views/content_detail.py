@@ -81,13 +81,20 @@ def build_content_detail_view(
             pass
 
     def _build_episode_card(ep: Episode, idx: int) -> ft.Container:
-        play_icon = ft.Icon(ft.Icons.PLAY_CIRCLE_FILL_ROUNDED, size=40, color=ft.Colors.WHITE)
+        poster_url = content.poster if content and content.poster else ""
 
         img = ft.Image(
-            src=ep.thumbnail if ep.thumbnail else (content.poster if content.poster else ""),
+            src=poster_url,
             fit="cover",
             expand=True,
         )
+        if not poster_url:
+            img = ft.Container(
+                content=ft.Icon(ft.Icons.PLAY_ARROW_ROUNDED, size=48, color=ft.Colors.WHITE),
+                expand=True,
+                bgcolor=ft.Colors.with_opacity(0.15, ft.Colors.ON_SURFACE),
+                alignment=ft.Alignment.CENTER,
+            )
 
         gradient = ft.Container(
             gradient=ft.LinearGradient(
@@ -130,7 +137,7 @@ def build_content_detail_view(
                 ft.Container(
                     alignment=ft.Alignment.CENTER_RIGHT,
                     padding=16,
-                    content=play_icon,
+                    content=ft.Icon(ft.Icons.PLAY_CIRCLE_FILL_ROUNDED, size=40, color=ft.Colors.WHITE),
                 )
             ],
             expand=True,
@@ -232,22 +239,25 @@ def build_content_detail_view(
 
     page_obj.refresh_episodes = refresh_episodes
 
-    bg_image_url = content.poster if content and content.poster else ""
+    poster_url = content.poster if content and content.poster else ""
+
+    bg_controls = [
+        ft.Container(
+            expand=True,
+            bgcolor=ft.Colors.with_opacity(0.85, ft.Colors.SURFACE),
+        ),
+    ]
+    if poster_url:
+        bg_controls.insert(0, ft.Image(
+            src=poster_url,
+            fit="cover",
+            expand=True,
+            opacity=0.3,
+        ))
 
     bg_container = ft.Stack(
         expand=True,
-        controls=[
-            ft.Image(
-                src=bg_image_url,
-                fit="cover",
-                expand=True,
-                opacity=0.3,
-            ),
-            ft.Container(
-                expand=True,
-                bgcolor=ft.Colors.with_opacity(0.85, ft.Colors.SURFACE),
-            ),
-        ],
+        controls=bg_controls,
     )
 
     bg_overlay = ft.Container(expand=True, bgcolor=ft.Colors.TRANSPARENT)
@@ -278,7 +288,7 @@ def build_content_detail_view(
             parts.append(f"\u2605 {content.rating}")
         info_text.value = " \u2022 ".join(parts)
 
-    poster = ft.Container(
+    poster_widget = ft.Container(
         width=200,
         height=300,
         border_radius=16,
@@ -289,8 +299,8 @@ def build_content_detail_view(
             offset=ft.Offset(0, 10),
         ),
         content=(
-            ft.Image(src=content.poster, fit="cover", border_radius=16)
-            if content and content.poster
+            ft.Image(src=poster_url, fit="cover", border_radius=16)
+            if poster_url
             else ft.Container(
                 content=ft.Icon(ft.Icons.MOVIE_ROUNDED, size=64, color=ft.Colors.ON_SURFACE_VARIANT),
                 bgcolor=ft.Colors.with_opacity(0.1, ft.Colors.ON_SURFACE),
@@ -315,7 +325,7 @@ def build_content_detail_view(
         padding=ft.Padding.all(32),
         content=ft.Row(
             [
-                poster,
+                poster_widget,
                 ft.Container(width=32),
                 ft.Column(
                     expand=True,

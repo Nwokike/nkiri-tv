@@ -10,100 +10,26 @@ def build_search_view(
     on_back,
 ) -> ft.View:
 
-    CARD_HEIGHT = 140
+    CARD_HEIGHT = 280
+
+    search_field = ft.TextField(
+        hint_text="Search movies, series...",
+        color=ft.Colors.ON_SURFACE,
+        bgcolor=ft.Colors.with_opacity(0.05, ft.Colors.ON_SURFACE),
+        border_color=ft.Colors.TRANSPARENT,
+        border_radius=16,
+        prefix_icon=ft.Icons.SEARCH_ROUNDED,
+        content_padding=20,
+        text_size=16,
+        on_submit=lambda e: page_obj.run_task(on_search, e.data.strip()),
+        focused_border_color=AppColors.PRIMARY,
+        focused_bgcolor=ft.Colors.with_opacity(0.1, AppColors.PRIMARY),
+    )
+
     results_grid = ft.ResponsiveRow(
         spacing=16,
         run_spacing=16,
-        margin=24,
     )
-
-    def on_hover_card(e, container):
-        if e.data == "true":
-            container.scale = 1.05
-            container.shadow = ft.BoxShadow(
-                spread_radius=2,
-                blur_radius=15,
-                color=ft.Colors.with_opacity(0.3, AppColors.PRIMARY),
-                offset=ft.Offset(0, 8),
-            )
-        else:
-            container.scale = 1.0
-            container.shadow = None
-        container.update()
-
-    def build_card(content: Content, idx: int):
-        img = ft.Image(
-            src=content.poster if content.poster else "https://via.placeholder.com/300x450?text=No+Poster",
-            fit="cover",
-            expand=True,
-        )
-
-        gradient = ft.Container(
-            gradient=ft.LinearGradient(
-                begin=ft.Alignment.TOP_CENTER,
-                end=ft.Alignment.BOTTOM_CENTER,
-                colors=[
-                    ft.Colors.TRANSPARENT,
-                    ft.Colors.with_opacity(0.8, ft.Colors.BLACK),
-                ],
-            ),
-            expand=True,
-        )
-
-        title_text = ft.Text(
-            content.title,
-            color=ft.Colors.WHITE,
-            weight=ft.FontWeight.BOLD,
-            size=14,
-            max_lines=2,
-            overflow=ft.TextOverflow.ELLIPSIS,
-        )
-
-        meta_text = ft.Text(
-            content.year,
-            color=AppColors.PRIMARY,
-            weight=ft.FontWeight.BOLD,
-            size=12,
-        )
-
-        content_stack = ft.Stack(
-            controls=[
-                img,
-                gradient,
-                ft.Container(
-                    padding=12,
-                    alignment=ft.Alignment.BOTTOM_LEFT,
-                    content=ft.Column(
-                        [title_text, meta_text],
-                        alignment=ft.MainAxisAlignment.END,
-                        spacing=4,
-                    )
-                )
-            ],
-            expand=True,
-        )
-
-        card_container = ft.Container(
-            content=content_stack,
-            border_radius=12,
-            clip_behavior="antiAlias",
-            animate_scale=300,
-            animate=300,
-            ink=True,
-            height=CARD_HEIGHT,
-            key=f"search_card_{idx}",
-            on_click=lambda _: on_select_content(content),
-            on_hover=lambda e: on_hover_card(e, card_container),
-        )
-        card_container.tab_index = idx + 10
-        card_container.on_focus = lambda e: _on_focus_card(e, card_container)
-        card_container.on_blur = lambda e: _on_blur_card(e, card_container)
-
-        wrapper = ft.Container(
-            content=card_container,
-            col={"xs": 6, "sm": 4, "md": 3, "lg": 2, "xl": 2},
-        )
-        return wrapper
 
     def _on_focus_card(e, ctrl):
         ctrl.scale = 1.05
@@ -126,63 +52,17 @@ def build_search_view(
         except Exception:
             pass
 
-    def on_search_submitted(e):
-        query = search_field.value.strip()
-        if query:
-            page_obj.run_task(on_search, query)
-
-    def update_results():
-        results_grid.controls.clear()
-        for i, r in enumerate(state.search_results):
-            results_grid.controls.append(build_card(r, i))
-
-        if state.is_loading:
-            scroll_content.controls = [
-                header,
-                search_field_container,
-                ft.Container(
-                    expand=True,
-                    alignment=ft.Alignment.CENTER,
-                    content=ft.ProgressRing(color=AppColors.PRIMARY, stroke_width=4)
-                )
-            ]
-        elif not state.search_results and state.search_query:
-            scroll_content.controls = [
-                header,
-                search_field_container,
-                ft.Container(
-                    expand=True,
-                    alignment=ft.Alignment.CENTER,
-                    content=ft.Column(
-                        [
-                            ft.Icon(ft.Icons.SEARCH_OFF_ROUNDED, size=64, color=ft.Colors.ON_SURFACE_VARIANT),
-                            ft.Container(height=16),
-                            ft.Text(
-                                f"No results found for '{state.search_query}'",
-                                color=ft.Colors.ON_SURFACE_VARIANT,
-                                size=16,
-                                text_align=ft.TextAlign.CENTER,
-                            ),
-                        ],
-                        horizontal_alignment=ft.CrossAxisAlignment.CENTER,
-                        alignment=ft.MainAxisAlignment.CENTER,
-                    )
-                )
-            ]
-        elif not state.search_results and not state.search_query:
-            scroll_content.controls = [
-                header,
-                search_field_container,
-                ft.Container(
-                    expand=True,
-                    alignment=ft.Alignment.CENTER,
-                    content=ft.Text("Search movies, series, dramas...", color=ft.Colors.ON_SURFACE_VARIANT, size=16)
-                )
-            ]
+    def _style_focusable(control, focused):
+        if focused:
+            control.bgcolor = ft.Colors.with_opacity(0.1, AppColors.PRIMARY)
+            control.border = ft.Border.all(2, AppColors.PRIMARY)
         else:
-            scroll_content.controls = [header, search_field_container, results_grid]
-
-        page_obj.update()
+            control.bgcolor = None
+            control.border = ft.Border.all(1.5, AppColors.PRIMARY)
+        try:
+            control.update()
+        except Exception:
+            pass
 
     def _on_focus_btn(e):
         e.control.bgcolor = ft.Colors.with_opacity(0.1, AppColors.PRIMARY)
@@ -198,29 +78,127 @@ def build_search_view(
         except Exception:
             pass
 
-    search_field = ft.TextField(
-        hint_text="Search movies, series...",
+    def _build_card(content: Content, idx: int):
+        img = ft.Image(
+            src=content.poster if content.poster else "",
+            fit="cover",
+            expand=True,
+        )
+        if not content.poster:
+            img = ft.Container(
+                content=ft.Icon(ft.Icons.MOVIE_ROUNDED, size=48, color=ft.Colors.ON_SURFACE_VARIANT),
+                expand=True,
+                bgcolor=ft.Colors.with_opacity(0.1, ft.Colors.ON_SURFACE),
+                alignment=ft.Alignment.CENTER,
+            )
+
+        gradient = ft.Container(
+            gradient=ft.LinearGradient(
+                begin=ft.Alignment.TOP_CENTER,
+                end=ft.Alignment.BOTTOM_CENTER,
+                colors=[
+                    ft.Colors.TRANSPARENT,
+                    ft.Colors.with_opacity(0.9, ft.Colors.BLACK),
+                ],
+            ),
+            expand=True,
+        )
+
+        title_text = ft.Text(
+            content.title,
+            color=ft.Colors.WHITE,
+            weight=ft.FontWeight.BOLD,
+            size=14,
+            max_lines=2,
+            overflow=ft.TextOverflow.ELLIPSIS,
+        )
+
+        year_text = ft.Text(
+            content.year if content.year else "",
+            size=12,
+            color=ft.Colors.WHITE_70,
+        )
+
+        type_text = ft.Text(
+            content.content_type.upper() if content.content_type else "",
+            size=12,
+            color=ft.Colors.WHITE_70,
+        )
+
+        content_stack = ft.Stack(
+            controls=[
+                img,
+                gradient,
+                ft.Container(
+                    padding=12,
+                    alignment=ft.Alignment.BOTTOM_LEFT,
+                    content=ft.Column(
+                        [
+                            title_text,
+                            ft.Row([year_text, ft.Container(expand=True), type_text], spacing=4),
+                        ],
+                        alignment=ft.MainAxisAlignment.END,
+                        spacing=4,
+                    )
+                )
+            ],
+            expand=True,
+        )
+
+        card_container = ft.Container(
+            content=content_stack,
+            border_radius=12,
+            clip_behavior="antiAlias",
+            animate_scale=300,
+            animate=300,
+            ink=True,
+            height=CARD_HEIGHT,
+            key=f"search_card_{idx}",
+            on_click=lambda _: on_select_content(content),
+        )
+        card_container.tab_index = idx + 2
+        card_container.on_focus = lambda e: _on_focus_card(e, card_container)
+        card_container.on_blur = lambda e: _on_blur_card(e, card_container)
+
+        wrapper = ft.Container(
+            content=card_container,
+            col={"xs": 6, "sm": 4, "md": 3, "lg": 3, "xl": 2},
+        )
+        return wrapper
+
+    def refresh_results():
+        results_grid.controls.clear()
+        if state.is_loading:
+            loading_indicator.visible = True
+            empty_state.visible = False
+        elif not state.search_results and state.search_query:
+            loading_indicator.visible = False
+            empty_state.visible = True
+            empty_state.controls[1].value = f"No results found for '{state.search_query}'"
+        else:
+            loading_indicator.visible = False
+            empty_state.visible = False
+            for i, c in enumerate(state.search_results):
+                results_grid.controls.append(_build_card(c, i))
+        page_obj.update()
+
+    page_obj.refresh_search_results = refresh_results
+
+    loading_indicator = ft.Container(
         expand=True,
-        border=ft.InputBorder.OUTLINE,
-        border_radius=10,
-        on_submit=on_search_submitted,
+        alignment=ft.Alignment.CENTER,
+        content=ft.ProgressRing(color=AppColors.PRIMARY, stroke_width=4),
+        visible=False,
     )
 
-    search_btn = ft.Container(
-        content=ft.Icon(ft.Icons.SEARCH_ROUNDED, color=ft.Colors.WHITE),
-        padding=12,
-        border_radius=10,
-        bgcolor=AppColors.PRIMARY,
-        ink=True,
-        on_click=lambda _: on_search_submitted(None),
-    )
-
-    search_field_container = ft.Container(
-        padding=ft.Padding.only(left=24, right=24, top=16, bottom=8),
-        content=ft.Row(
-            controls=[search_field, search_btn],
-            spacing=8,
-        ),
+    empty_state = ft.Column(
+        [
+            ft.Icon(ft.Icons.SEARCH_OFF_ROUNDED, size=64, color=ft.Colors.ON_SURFACE_VARIANT),
+            ft.Text("Search for movies, series, dramas...", size=16, color=ft.Colors.ON_SURFACE_VARIANT),
+        ],
+        horizontal_alignment=ft.CrossAxisAlignment.CENTER,
+        alignment=ft.MainAxisAlignment.CENTER,
+        expand=True,
     )
 
     back_btn = ft.Container(
@@ -235,21 +213,48 @@ def build_search_view(
     back_btn.on_blur = _on_blur_btn
 
     header = ft.Container(
-        padding=ft.Padding.only(left=24, right=24, top=24, bottom=8),
-        content=ft.Row(
-            controls=[
+        padding=ft.Padding.only(left=24, right=24, top=24, bottom=16),
+        content=ft.Column(
+            [
                 ft.Row(
-                    controls=[back_btn, ft.Text("Search", size=24, weight=ft.FontWeight.BOLD)],
+                    [
+                        back_btn,
+                        ft.Container(
+                            width=36,
+                            height=36,
+                            border_radius=10,
+                            alignment=ft.Alignment.CENTER,
+                            content=ft.Image(
+                                src="icon.png",
+                                width=24,
+                                height=24,
+                                fit="contain"
+                            ),
+                        ),
+                        ft.Text("Search", size=24, weight=ft.FontWeight.BOLD),
+                    ],
                     spacing=12,
                 ),
+                ft.Container(height=8),
+                search_field,
             ],
+            spacing=0,
         )
     )
 
+    grid_area = ft.Container(
+        expand=True,
+        padding=ft.Padding.only(left=24, right=24, bottom=24),
+        content=ft.Stack([results_grid, loading_indicator, empty_state]),
+    )
+
     scroll_content = ft.Column(
-        controls=[header, results_grid],
-        expand=False,
+        [
+            header,
+            grid_area,
+        ],
         spacing=0,
+        expand=False,
     )
 
     scrollable = ft.ListView(
@@ -275,7 +280,6 @@ def build_search_view(
         padding=0,
     )
 
-    page_obj.refresh_search_results = update_results
-    update_results()
+    refresh_results()
 
     return view

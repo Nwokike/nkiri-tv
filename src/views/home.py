@@ -35,10 +35,17 @@ def build_home_view(
 
     def build_card(content: Content, idx: int):
         img = ft.Image(
-            src=content.poster if content.poster else "https://via.placeholder.com/300x450?text=No+Poster",
+            src=content.poster if content.poster else "",
             fit="cover",
             expand=True,
         )
+        if not content.poster:
+            img = ft.Container(
+                content=ft.Icon(ft.Icons.MOVIE_ROUNDED, size=48, color=ft.Colors.ON_SURFACE_VARIANT),
+                expand=True,
+                bgcolor=ft.Colors.with_opacity(0.1, ft.Colors.ON_SURFACE),
+                alignment=ft.Alignment.CENTER,
+            )
 
         gradient = ft.Container(
             gradient=ft.LinearGradient(
@@ -97,7 +104,7 @@ def build_home_view(
             on_click=lambda _: on_select_content(content),
             on_hover=lambda e: on_hover_card(e, card_container),
         )
-        card_container.tab_index = idx + 10
+        card_container.tab_index = idx + 3
         card_container.on_focus = lambda e: _on_focus_card(e, card_container)
         card_container.on_blur = lambda e: _on_blur_card(e, card_container)
 
@@ -174,7 +181,7 @@ def build_home_view(
             on_click=on_prev_page if state.latest_page > 1 else None,
         )
         num_cards = len(state.latest_releases)
-        prev_btn.tab_index = num_cards + 10
+        prev_btn.tab_index = num_cards + 3
         prev_btn.on_focus = lambda e: _style_focusable(e.control, True)
         prev_btn.on_blur = lambda e: _style_focusable(e.control, False)
 
@@ -192,7 +199,7 @@ def build_home_view(
             ink=True,
             on_click=on_next_page if state.latest_has_more else None,
         )
-        next_btn.tab_index = num_cards + 11
+        next_btn.tab_index = num_cards + 4
         next_btn.on_focus = lambda e: _style_focusable(e.control, True)
         next_btn.on_blur = lambda e: _style_focusable(e.control, False)
 
@@ -212,7 +219,7 @@ def build_home_view(
             ),
         )
 
-        if state.is_loading and not state.latest_releases:
+        if state.is_loading:
             scroll_content.controls = [
                 header,
                 category_chips,
