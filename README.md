@@ -44,7 +44,6 @@ Get the latest version of Nkiri TV. If you aren't sure which Android version to 
 - **Browse & Search** — Paginated content discovery across 10+ categories (K-Drama, Bollywood, Asian Movies, Philippine Movies, Chinese Dramas, and more) with real-time search and poster previews.
 - **Episode Grid** — Snapshot-based episode cards with pagination, season/episode labels, and file size display.
 - **Direct MKV Stream Resolution** — Automatic downloadwella link resolution for direct `.mkv` streaming via HTTP range requests. No full download required.
-- **KTV Player Integration** — Optional external player deep-link support (`ktv://play?url=<base64>`) for monetization. Toggle between internal `flet-video` and external player.
 - **TV Remote Navigation** — Full D-pad support with sequential tab indexing, focus ring highlights, and hover effects. Optimized for Android TV, Fire Stick, and Leanback.
 - **Adaptive Scraper** — WordPress REST API parser with downloadwella direct link resolver. In-memory + SQLite caching with TTL expiration.
 - **System Theme Awareness** — Automatically follows device light/dark mode with manual override. Emerald green cinematic palette.
@@ -56,7 +55,7 @@ Get the latest version of Nkiri TV. If you aren't sure which Android version to 
 |-------|-----------|
 | Frontend | Flet 0.85 (Python → Flutter) |
 | Video Engine | `flet-video` (libmpv backend) |
-| Network | `requests` (sync, connection pooling, 15s timeout) |
+| Network | `httpx` (async, connection pooling) |
 | Cache | `aiosqlite` (WAL-mode SQLite with TTL) + in-memory LRU |
 | Stream Resolver | downloadwella POST → regex direct `.mkv` extraction |
 | Content Source | Nkiri WordPress REST API (`/wp-json/wp/v2/posts`) |
