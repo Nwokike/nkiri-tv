@@ -146,7 +146,7 @@ async def main(page: ft.Page):
             page.update()
 
         try:
-            results, has_more = scraper.latest_releases(page_num, state.active_category)
+            results, has_more = await scraper.latest_releases(page_num, state.active_category)
             state.latest_releases = results
             state.latest_has_more = has_more
         except Exception:
@@ -174,7 +174,7 @@ async def main(page: ft.Page):
             page.update()
 
         try:
-            results, has_more = scraper.search(query, 1)
+            results, has_more = await scraper.search(query, 1)
             state.search_results = results
             state.search_has_more = has_more
         except Exception:
@@ -202,7 +202,7 @@ async def main(page: ft.Page):
             page.update()
 
         try:
-            episodes = scraper.episodes(content_id)
+            episodes = await scraper.episodes(content_id)
             state.episodes = episodes
             state.episodes_has_more = False
         except Exception:
@@ -222,7 +222,7 @@ async def main(page: ft.Page):
 
         try:
             episode = state.episodes[episode_index]
-            source = scraper.resolve_episode(episode.downloadwella_url)
+            source = await scraper.resolve_episode(episode.downloadwella_url)
 
             if not source:
                 page.snack_bar = ft.SnackBar(ft.Text("Could not resolve stream."), bgcolor=AppColors.ERROR)
@@ -295,6 +295,8 @@ async def main(page: ft.Page):
         elif parsed.path.startswith("/content/"):
             content_id = int(parsed.path.split("/")[-1])
             matching = [c for c in state.latest_releases if c.nkiri_id == content_id]
+            if not matching:
+                matching = [c for c in state.search_results if c.nkiri_id == content_id]
             content_obj = matching[0] if matching else Content(
                 id=content_id, title="Loading...", poster="", year="", rating="",
                 description="", nkiri_id=content_id, categories=[], content_type="",

@@ -8,17 +8,21 @@ from core.state import Content, Episode, Source
 
 class NkiriScraper:
     def __init__(self):
-        self.client = httpx.Client(
-            headers={
-                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-            },
-            timeout=(5, 20),
-            follow_redirects=True,
-            http2=True,
-        )
+        self._client: httpx.AsyncClient | None = None
         self._mem_cache = {}
         self._mem_ttl = {}
         self._resolve_cache = {}
+
+    def _get_client(self) -> httpx.AsyncClient:
+        if self._client is None or self._client.is_closed:
+            self._client = httpx.AsyncClient(
+                headers={
+                    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+                },
+                timeout=15.0,
+                follow_redirects=True,
+            )
+        return self._client
 
     def _get_mem(self, key: str, ttl: int = 300):
         if key in self._mem_cache and key in self._mem_ttl:
@@ -120,7 +124,7 @@ class NkiriScraper:
 
         return episodes
 
-    def latest_releases(self, page: int = 1, category: str = "TV Series") -> tuple[list[Content], bool]:
+    async def latest_releases(self, page: int = 1, category: str = "TV Series") -> tuple[list[Content], bool]:
         cache_key = f"latest_{category}_{page}"
         cached = self._get_mem(cache_key)
         if cached:
@@ -128,7 +132,8 @@ class NkiriScraper:
 
         cat_id = CATEGORIES.get(category, CATEGORIES["TV Series"])
 
-        resp = self.client.get(
+        client = self._get_client()
+        resp = await client.get(
             f"{NKIRI_API}/posts",
             params={
                 "categories": cat_id,
@@ -151,7 +156,7 @@ class NkiriScraper:
         poster_map = {}
         if media_ids:
             ids_str = ",".join(str(x) for x in media_ids)
-            mr = self.client.get(
+            mr = await client.get(
                 f"{NKIRI_API}/media",
                 params={"include": ids_str, "per_page": 20, "_fields": "id,source_url"},
             )
@@ -186,13 +191,14 @@ class NkiriScraper:
         self._set_mem(cache_key, result, ttl=300)
         return result
 
-    def search(self, query: str, page: int = 1) -> tuple[list[Content], bool]:
+    async def search(self, query: str, page: int = 1) -> tuple[list[Content], bool]:
         cache_key = f"search_{query}_{page}"
         cached = self._get_mem(cache_key, ttl=600)
         if cached:
             return cached
 
-        resp = self.client.get(
+        client = self._get_client()
+        resp = await client.get(
             f"{NKIRI_API}/posts",
             params={
                 "search": query,
@@ -213,7 +219,7 @@ class NkiriScraper:
         poster_map = {}
         if media_ids:
             ids_str = ",".join(str(x) for x in media_ids)
-            mr = self.client.get(
+            mr = await client.get(
                 f"{NKIRI_API}/media",
                 params={"include": ids_str, "per_page": 20, "_fields": "id,source_url"},
             )
@@ -248,13 +254,14 @@ class NkiriScraper:
         self._set_mem(cache_key, result, ttl=600)
         return result
 
-    def episodes(self, nkiri_id: int) -> list[Episode]:
+    async def episodes(self, nkiri_id: int) -> list[Episode]:
         cache_key = f"episodes_{nkiri_id}"
         cached = self._get_mem(cache_key, ttl=3600)
         if cached:
             return cached
 
-        resp = self.client.get(
+        client = self._get_client()
+        resp = await client.get(
             f"{NKIRI_API}/posts/{nkiri_id}",
             params={"_fields": "id,content"},
         )
@@ -271,7 +278,7 @@ class NkiriScraper:
         self._set_mem(cache_key, result, ttl=3600)
         return result
 
-    def resolve_episode(self, downloadwella_url: str) -> Source | None:
+    async def resolve_episode(self, downloadwella_url: str) -> Source | None:
         if downloadwella_url in self._resolve_cache:
             return self._resolve_cache[downloadwella_url]
 
@@ -281,7 +288,8 @@ class NkiriScraper:
                 return None
             file_id = file_id_match.group(1)
 
-            resp = self.client.post(
+            client = self._get_client()
+            resp = await client.post(
                 "https://downloadwella.com/",
                 data={
                     "op": "download2",
@@ -327,5 +335,6 @@ class NkiriScraper:
         self._mem_cache.clear()
         self._mem_ttl.clear()
 
-    def close(self):
-        self.client.close()
+    async def close(self):
+        if self._client and not self._client.is_closed:
+            await self._client.aclose()
