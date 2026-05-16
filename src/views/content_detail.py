@@ -84,7 +84,7 @@ def build_content_detail_view(
         play_icon = ft.Icon(ft.Icons.PLAY_CIRCLE_FILL_ROUNDED, size=40, color=ft.Colors.WHITE)
 
         img = ft.Image(
-            src=ep.thumbnail if ep.thumbnail else "",
+            src=ep.thumbnail if ep.thumbnail else (content.poster if content.poster else ""),
             fit="cover",
             expand=True,
         )

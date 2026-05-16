@@ -11,7 +11,7 @@ def build_home_view(
     on_search_click,
 ) -> ft.View:
 
-    CARD_HEIGHT = 140
+    CARD_HEIGHT = 280
 
     latest_grid = ft.ResponsiveRow(
         spacing=16,

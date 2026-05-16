@@ -201,7 +201,7 @@ def build_search_view(
     search_field = ft.TextField(
         hint_text="Search movies, series...",
         expand=True,
-        border=ft.InputBorder.OUTLINED,
+        border=ft.InputBorder.OUTLINE,
         border_radius=10,
         on_submit=on_search_submitted,
     )
