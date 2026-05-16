@@ -145,15 +145,20 @@ async def main(page: ft.Page):
         else:
             page.update()
 
-        results, has_more = scraper.latest_releases(page_num, state.active_category)
-        state.latest_releases = results
-        state.latest_has_more = has_more
-        state.is_loading = False
-        _loading_tasks.pop(task_key, None)
-        if hasattr(page, "update_home_grid"):
-            page.update_home_grid()
-        else:
-            page.update()
+        try:
+            results, has_more = scraper.latest_releases(page_num, state.active_category)
+            state.latest_releases = results
+            state.latest_has_more = has_more
+        except Exception:
+            state.latest_releases = []
+            state.latest_has_more = False
+        finally:
+            state.is_loading = False
+            _loading_tasks.pop(task_key, None)
+            if hasattr(page, "update_home_grid"):
+                page.update_home_grid()
+            else:
+                page.update()
 
     async def load_search(query: str):
         task_key = f"search_{query}"
@@ -168,15 +173,20 @@ async def main(page: ft.Page):
         else:
             page.update()
 
-        results, has_more = scraper.search(query, 1)
-        state.search_results = results
-        state.search_has_more = has_more
-        state.is_loading = False
-        _loading_tasks.pop(task_key, None)
-        if hasattr(page, "refresh_search_results"):
-            page.refresh_search_results()
-        else:
-            page.update()
+        try:
+            results, has_more = scraper.search(query, 1)
+            state.search_results = results
+            state.search_has_more = has_more
+        except Exception:
+            state.search_results = []
+            state.search_has_more = False
+        finally:
+            state.is_loading = False
+            _loading_tasks.pop(task_key, None)
+            if hasattr(page, "refresh_search_results"):
+                page.refresh_search_results()
+            else:
+                page.update()
 
     async def load_episodes(content_id: int, page_num: int = 1):
         task_key = f"episodes_{content_id}_{page_num}"
@@ -191,41 +201,50 @@ async def main(page: ft.Page):
         else:
             page.update()
 
-        episodes = scraper.episodes(content_id)
-        state.episodes = episodes
-        state.episodes_has_more = False
-        state.is_loading = False
-        _loading_tasks.pop(task_key, None)
-        if hasattr(page, "refresh_episodes"):
-            page.refresh_episodes()
-        else:
-            page.update()
+        try:
+            episodes = scraper.episodes(content_id)
+            state.episodes = episodes
+            state.episodes_has_more = False
+        except Exception:
+            state.episodes = []
+            state.episodes_has_more = False
+        finally:
+            state.is_loading = False
+            _loading_tasks.pop(task_key, None)
+            if hasattr(page, "refresh_episodes"):
+                page.refresh_episodes()
+            else:
+                page.update()
 
     async def play_episode(content: Content, episode_index: int):
         state.is_loading = True
-        if hasattr(page, "update_home_grid"):
-            page.update_home_grid()
         page.update()
 
-        episode = state.episodes[episode_index]
+        try:
+            episode = state.episodes[episode_index]
+            source = scraper.resolve_episode(episode.downloadwella_url)
 
-        source = scraper.resolve_episode(episode.downloadwella_url)
-        state.is_loading = False
+            if not source:
+                page.snack_bar = ft.SnackBar(ft.Text("Could not resolve stream."), bgcolor=AppColors.ERROR)
+                page.snack_bar.open = True
+                page.update()
+                return
 
-        if not source:
-            page.snack_bar = ft.SnackBar(ft.Text("Could not resolve stream."), bgcolor=AppColors.ERROR)
+            state.selected_source = source
+            state.current_content_id = content.nkiri_id
+            state.current_episode_index = episode_index
+
+            if USE_EXTERNAL_PLAYER:
+                page.run_task(play_episode_external, source.url)
+            else:
+                await navigate("/play")
+        except Exception:
+            page.snack_bar = ft.SnackBar(ft.Text("Error loading episode."), bgcolor=AppColors.ERROR)
             page.snack_bar.open = True
             page.update()
-            return
-
-        state.selected_source = source
-        state.current_content_id = content.nkiri_id
-        state.current_episode_index = episode_index
-
-        if USE_EXTERNAL_PLAYER:
-            page.run_task(play_episode_external, source.url)
-        else:
-            await navigate("/play")
+        finally:
+            state.is_loading = False
+            page.update()
 
     async def play_episode_external(mkv_url: str):
         encoded_url = base64.urlsafe_b64encode(mkv_url.encode()).decode()

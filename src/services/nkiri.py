@@ -1,7 +1,6 @@
 import re
-import json
 import time
-import requests
+import httpx
 from bs4 import BeautifulSoup
 from core.config import NKIRI_API, CATEGORIES
 from core.state import Content, Episode, Source
@@ -9,10 +8,14 @@ from core.state import Content, Episode, Source
 
 class NkiriScraper:
     def __init__(self):
-        self.session = requests.Session()
-        self.session.headers.update({
-            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-        })
+        self.client = httpx.Client(
+            headers={
+                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+            },
+            timeout=(5, 20),
+            follow_redirects=True,
+            http2=True,
+        )
         self._mem_cache = {}
         self._mem_ttl = {}
         self._resolve_cache = {}
@@ -49,19 +52,6 @@ class NkiriScraper:
             content_type = "series"
 
         return title, year, content_type
-
-    @staticmethod
-    def _parse_poster(content_html: str, featured_media: list | None = None) -> str:
-        if featured_media:
-            for media in featured_media:
-                if isinstance(media, dict) and media.get("source_url"):
-                    return media["source_url"]
-        soup = BeautifulSoup(content_html, "html.parser")
-        for img in soup.find_all("img"):
-            src = img.get("src", "")
-            if "use-on-site" not in src.lower() and "dramakey" not in src.lower():
-                return src
-        return ""
 
     @staticmethod
     def _parse_rating(content_html: str) -> str:
@@ -137,7 +127,8 @@ class NkiriScraper:
             return cached
 
         cat_id = CATEGORIES.get(category, CATEGORIES["TV Series"])
-        resp = self.session.get(
+
+        resp = self.client.get(
             f"{NKIRI_API}/posts",
             params={
                 "categories": cat_id,
@@ -145,9 +136,8 @@ class NkiriScraper:
                 "page": page,
                 "orderby": "date",
                 "order": "desc",
-                "_embed": 1,
+                "_fields": "id,title,featured_media,date",
             },
-            timeout=15,
         )
         if resp.status_code != 200:
             return [], False
@@ -157,31 +147,37 @@ class NkiriScraper:
         except Exception:
             return [], False
 
+        media_ids = [p["featured_media"] for p in posts if p.get("featured_media")]
+        poster_map = {}
+        if media_ids:
+            ids_str = ",".join(str(x) for x in media_ids)
+            mr = self.client.get(
+                f"{NKIRI_API}/media",
+                params={"include": ids_str, "per_page": 20, "_fields": "id,source_url"},
+            )
+            if mr.status_code == 200:
+                try:
+                    for m in mr.json():
+                        poster_map[m["id"]] = m.get("source_url", "")
+                except Exception:
+                    pass
+
         results = []
         for post in posts:
-            content_html = post.get("content", {}).get("rendered", "")
             raw_title = post.get("title", {}).get("rendered", "")
             title, year, content_type = self._clean_title(raw_title)
 
-            featured = post.get("_embedded", {}).get("wp:featuredmedia", [])
-            poster = self._parse_poster(content_html, featured)
-            rating = self._parse_rating(content_html)
-            description = self._parse_description(content_html)
-
-            categories = []
-            for cat in post.get("_embedded", {}).get("wp:term", [[]])[0]:
-                if isinstance(cat, dict) and cat.get("taxonomy") == "category":
-                    categories.append(cat.get("name", ""))
+            poster = poster_map.get(post.get("featured_media", 0), "")
 
             results.append(Content(
                 id=post.get("id", 0),
                 title=title,
                 poster=poster,
                 year=year,
-                rating=rating,
-                description=description,
+                rating="",
+                description="",
                 nkiri_id=post.get("id", 0),
-                categories=categories,
+                categories=[],
                 content_type=content_type,
             ))
 
@@ -196,15 +192,14 @@ class NkiriScraper:
         if cached:
             return cached
 
-        resp = self.session.get(
+        resp = self.client.get(
             f"{NKIRI_API}/posts",
             params={
                 "search": query,
                 "per_page": 12,
                 "page": page,
-                "_embed": 1,
+                "_fields": "id,title,featured_media,date",
             },
-            timeout=15,
         )
         if resp.status_code != 200:
             return [], False
@@ -214,24 +209,35 @@ class NkiriScraper:
         except Exception:
             return [], False
 
+        media_ids = [p["featured_media"] for p in posts if p.get("featured_media")]
+        poster_map = {}
+        if media_ids:
+            ids_str = ",".join(str(x) for x in media_ids)
+            mr = self.client.get(
+                f"{NKIRI_API}/media",
+                params={"include": ids_str, "per_page": 20, "_fields": "id,source_url"},
+            )
+            if mr.status_code == 200:
+                try:
+                    for m in mr.json():
+                        poster_map[m["id"]] = m.get("source_url", "")
+                except Exception:
+                    pass
+
         results = []
         for post in posts:
-            content_html = post.get("content", {}).get("rendered", "")
             raw_title = post.get("title", {}).get("rendered", "")
             title, year, content_type = self._clean_title(raw_title)
 
-            featured = post.get("_embedded", {}).get("wp:featuredmedia", [])
-            poster = self._parse_poster(content_html, featured)
-            rating = self._parse_rating(content_html)
-            description = self._parse_description(content_html)
+            poster = poster_map.get(post.get("featured_media", 0), "")
 
             results.append(Content(
                 id=post.get("id", 0),
                 title=title,
                 poster=poster,
                 year=year,
-                rating=rating,
-                description=description,
+                rating="",
+                description="",
                 nkiri_id=post.get("id", 0),
                 categories=[],
                 content_type=content_type,
@@ -248,7 +254,10 @@ class NkiriScraper:
         if cached:
             return cached
 
-        resp = self.session.get(f"{NKIRI_API}/posts/{nkiri_id}", timeout=15)
+        resp = self.client.get(
+            f"{NKIRI_API}/posts/{nkiri_id}",
+            params={"_fields": "id,content"},
+        )
         if resp.status_code != 200:
             return []
 
@@ -272,7 +281,7 @@ class NkiriScraper:
                 return None
             file_id = file_id_match.group(1)
 
-            resp = self.session.post(
+            resp = self.client.post(
                 "https://downloadwella.com/",
                 data={
                     "op": "download2",
@@ -319,4 +328,4 @@ class NkiriScraper:
         self._mem_ttl.clear()
 
     def close(self):
-        self.session.close()
+        self.client.close()
