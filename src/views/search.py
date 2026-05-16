@@ -92,7 +92,7 @@ def build_search_view(
             ink=True,
             height=CARD_HEIGHT,
             key=f"search_card_{idx}",
-            on_click=lambda _: page_obj.run_task(on_select_content, content),
+            on_click=lambda _: on_select_content(content),
             on_hover=lambda e: on_hover_card(e, card_container),
         )
         card_container.tab_index = idx + 10
