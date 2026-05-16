@@ -344,6 +344,7 @@ def build_home_view(
     )
 
     if not state.latest_releases and not state.is_loading:
+        state.is_loading = True
         page_obj.run_task(on_load_latest)
 
     page_obj.update_home_grid = update_grid

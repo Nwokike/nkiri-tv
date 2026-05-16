@@ -146,7 +146,7 @@ def build_content_detail_view(
             ink=True,
             height=EP_CARD_HEIGHT,
             key=f"ep_card_{idx}",
-            on_click=lambda _, i=idx: on_play_episode(content, i),
+            on_click=lambda _, i=idx: page_obj.run_task(on_play_episode, content, i),
             on_hover=lambda e: on_hover_ep(e, card_container),
         )
         card_container.tab_index = idx + 2
