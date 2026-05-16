@@ -1,5 +1,6 @@
 import re
 import requests
+import time
 from bs4 import BeautifulSoup
 from core.config import NKIRI_API, CATEGORIES
 from core.state import Content, Episode, Source
@@ -11,6 +12,21 @@ class NkiriScraper:
         self.session.headers.update({
             "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
         })
+        self._cache = {}
+        self._cache_ttl = {}
+        self._resolve_cache = {}
+
+    def _get_cached(self, key: str, ttl: int = 300):
+        if key in self._cache and key in self._cache_ttl:
+            if time.time() < self._cache_ttl[key]:
+                return self._cache[key]
+            del self._cache[key]
+            del self._cache_ttl[key]
+        return None
+
+    def _set_cached(self, key: str, value, ttl: int = 300):
+        self._cache[key] = value
+        self._cache_ttl[key] = time.time() + ttl
 
     @staticmethod
     def _clean_title(raw_title: str) -> tuple[str, str]:
@@ -111,6 +127,11 @@ class NkiriScraper:
         return episodes
 
     def latest_releases(self, page: int = 1, category: str = "TV Series") -> tuple[list[Content], bool]:
+        cache_key = f"latest_{category}_{page}"
+        cached = self._get_cached(cache_key)
+        if cached:
+            return cached
+
         cat_id = CATEGORIES.get(category, CATEGORIES["TV Series"])
         resp = self.session.get(
             f"{NKIRI_API}/posts",
@@ -161,9 +182,16 @@ class NkiriScraper:
             ))
 
         has_more = len(posts) == 12
-        return results, has_more
+        result = (results, has_more)
+        self._set_cached(cache_key, result, ttl=300)
+        return result
 
     def search(self, query: str, page: int = 1) -> tuple[list[Content], bool]:
+        cache_key = f"search_{query}_{page}"
+        cached = self._get_cached(cache_key, ttl=600)
+        if cached:
+            return cached
+
         resp = self.session.get(
             f"{NKIRI_API}/posts",
             params={
@@ -206,9 +234,16 @@ class NkiriScraper:
             ))
 
         has_more = len(posts) == 12
-        return results, has_more
+        result = (results, has_more)
+        self._set_cached(cache_key, result, ttl=600)
+        return result
 
     def episodes(self, nkiri_id: int) -> list[Episode]:
+        cache_key = f"episodes_{nkiri_id}"
+        cached = self._get_cached(cache_key, ttl=3600)
+        if cached:
+            return cached
+
         resp = self.session.get(f"{NKIRI_API}/posts/{nkiri_id}", timeout=15)
         if resp.status_code != 200:
             return []
@@ -219,9 +254,14 @@ class NkiriScraper:
             return []
 
         content_html = post.get("content", {}).get("rendered", "")
-        return self._parse_episodes(content_html)
+        result = self._parse_episodes(content_html)
+        self._set_cached(cache_key, result, ttl=3600)
+        return result
 
     def resolve_episode(self, downloadwella_url: str) -> Source | None:
+        if downloadwella_url in self._resolve_cache:
+            return self._resolve_cache[downloadwella_url]
+
         try:
             file_id_match = re.search(r'downloadwella\.com/([a-z0-9]+)/', downloadwella_url)
             if not file_id_match:
@@ -248,23 +288,31 @@ class NkiriScraper:
 
             direct_match = re.search(r'(https://dwbe\d+\.downloadwella\.com/d/[^"]+\.mkv)', resp.text)
             if direct_match:
-                return Source(
+                source = Source(
                     url=direct_match.group(1),
                     quality="1080p",
                     size="",
                 )
+                self._resolve_cache[downloadwella_url] = source
+                return source
 
             alt_match = re.search(r'(https://[^\s"]+\.mkv[^\s"]*)', resp.text)
             if alt_match:
-                return Source(
+                source = Source(
                     url=alt_match.group(1),
                     quality="1080p",
                     size="",
                 )
+                self._resolve_cache[downloadwella_url] = source
+                return source
 
             return None
         except Exception:
             return None
+
+    def clear_cache(self):
+        self._cache.clear()
+        self._cache_ttl.clear()
 
     def close(self):
         self.session.close()
