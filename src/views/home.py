@@ -2,6 +2,8 @@ import flet as ft
 from core.state import state, Content
 from core.theme import AppColors
 from core.config import CATEGORIES
+from core.focus_manager import make_focusable_card, make_focusable_button, make_focusable_border
+from core.constants import APP_NAME, LBL_PREVIOUS, LBL_NEXT, LBL_PAGE
 
 
 def build_home_view(
@@ -103,39 +105,17 @@ def build_home_view(
             ink=True,
             height=CARD_HEIGHT,
             key=f"home_card_{idx}",
-            on_click=lambda _: on_select_content(content),
-            on_hover=lambda e: on_hover_card(e, card_container),
+            on_click=lambda _, c=content: on_select_content(c),
         )
+        card_container.on_hover = lambda e, ctr=card_container: on_hover_card(e, ctr)
         card_container.tab_index = idx + 3
-        card_container.on_focus = lambda e: _on_focus_card(e, card_container)
-        card_container.on_blur = lambda e: _on_blur_card(e, card_container)
+        make_focusable_card(card_container)
 
         wrapper = ft.Container(
             content=card_container,
             col={"xs": 6, "sm": 4, "md": 3, "lg": 2, "xl": 2},
         )
         return wrapper
-
-    def _on_focus_card(e, ctrl):
-        ctrl.scale = 1.05
-        ctrl.shadow = ft.BoxShadow(
-            spread_radius=2,
-            blur_radius=15,
-            color=ft.Colors.with_opacity(0.3, AppColors.PRIMARY),
-            offset=ft.Offset(0, 8),
-        )
-        try:
-            ctrl.update()
-        except Exception:
-            pass
-
-    def _on_blur_card(e, ctrl):
-        ctrl.scale = 1.0
-        ctrl.shadow = None
-        try:
-            ctrl.update()
-        except Exception:
-            pass
 
     def load_page(page_num: int):
         state.is_loading = True
@@ -157,18 +137,6 @@ def build_home_view(
             page_obj.update()
             load_page(state.latest_page - 1)
 
-    def _style_focusable(control, focused):
-        if focused:
-            control.bgcolor = ft.Colors.with_opacity(0.1, AppColors.PRIMARY)
-            control.border = ft.Border.all(2, AppColors.PRIMARY)
-        else:
-            control.bgcolor = None
-            control.border = ft.Border.all(1.5, AppColors.PRIMARY)
-        try:
-            control.update()
-        except Exception:
-            pass
-
     def update_grid():
         latest_grid.controls.clear()
         for i, r in enumerate(state.latest_releases):
@@ -177,7 +145,7 @@ def build_home_view(
         prev_btn.content = ft.Row(
             [
                 ft.Icon(ft.Icons.ARROW_BACK_IOS_NEW_ROUNDED, color=ft.Colors.ON_SURFACE if state.latest_page > 1 else ft.Colors.ON_SURFACE_VARIANT),
-                ft.Text("Previous", color=ft.Colors.ON_SURFACE if state.latest_page > 1 else ft.Colors.ON_SURFACE_VARIANT),
+                ft.Text(LBL_PREVIOUS, color=ft.Colors.ON_SURFACE if state.latest_page > 1 else ft.Colors.ON_SURFACE_VARIANT),
             ],
             spacing=8,
         )
@@ -187,7 +155,7 @@ def build_home_view(
 
         next_btn.content = ft.Row(
             [
-                ft.Text("Next", color=ft.Colors.ON_SURFACE if state.latest_has_more else ft.Colors.ON_SURFACE_VARIANT),
+                ft.Text(LBL_NEXT, color=ft.Colors.ON_SURFACE if state.latest_has_more else ft.Colors.ON_SURFACE_VARIANT),
                 ft.Icon(ft.Icons.ARROW_FORWARD_IOS_ROUNDED, color=ft.Colors.ON_SURFACE if state.latest_has_more else ft.Colors.ON_SURFACE_VARIANT),
             ],
             spacing=8,
@@ -196,7 +164,7 @@ def build_home_view(
         next_btn.tab_index = num_cards + 4
 
         nav_row = ft.Row(
-            controls=[prev_btn, loading_spinner, ft.Text(f"Page {state.latest_page}", color=ft.Colors.ON_SURFACE, weight=ft.FontWeight.W_500), next_btn],
+            controls=[prev_btn, loading_spinner, ft.Text(f"{LBL_PAGE} {state.latest_page}", color=ft.Colors.ON_SURFACE, weight=ft.FontWeight.W_500), next_btn],
             alignment=ft.MainAxisAlignment.CENTER,
             spacing=16,
         )
@@ -211,7 +179,7 @@ def build_home_view(
             ),
         )
 
-        if state.is_loading:
+        if state.is_loading and not state.latest_releases:
             scroll_content.controls = [
                 header,
                 category_chips,
@@ -238,20 +206,6 @@ def build_home_view(
         theme_btn.disabled = False
         page_obj.update()
 
-    def _on_focus_btn(e):
-        e.control.bgcolor = ft.Colors.with_opacity(0.1, AppColors.PRIMARY)
-        try:
-            e.control.update()
-        except Exception:
-            pass
-
-    def _on_blur_btn(e):
-        e.control.bgcolor = None
-        try:
-            e.control.update()
-        except Exception:
-            pass
-
     def on_chip_selected(category: str):
         state.active_category = category
         state.latest_page = 1
@@ -263,23 +217,17 @@ def build_home_view(
 
     category_chips = ft.Container(
         padding=ft.Padding.only(left=24, right=24, top=8, bottom=8),
-        content=ft.Column(
+        content=ft.Row(
             controls=[
-                ft.Row(
-                    controls=[
-                        ft.Chip(
-                            label=ft.Text(cat, size=13),
-                            selected=state.active_category == cat,
-                            on_select=lambda e, c=cat: on_chip_selected(c),
-                        )
-                        for cat in CATEGORIES.keys()
-                    ],
-                    spacing=8,
-                    wrap=True,
-                ),
+                ft.Chip(
+                    label=ft.Text(cat, size=13),
+                    selected=state.active_category == cat,
+                    on_select=lambda e, c=cat: on_chip_selected(c),
+                )
+                for cat in CATEGORIES.keys()
             ],
-            spacing=0,
-            scroll=True,
+            spacing=8,
+            wrap=True,
         ),
     )
 
@@ -288,11 +236,10 @@ def build_home_view(
         padding=10,
         border_radius=10,
         ink=True,
-        on_click=lambda _: on_search_click(),
+        on_click=lambda _=None: on_search_click(),
     )
     search_btn.tab_index = 1
-    search_btn.on_focus = _on_focus_btn
-    search_btn.on_blur = _on_blur_btn
+    make_focusable_button(search_btn)
 
     theme_btn = ft.Container(
         content=ft.Icon(
@@ -305,8 +252,7 @@ def build_home_view(
         on_click=handle_theme_toggle,
     )
     theme_btn.tab_index = 2
-    theme_btn.on_focus = _on_focus_btn
-    theme_btn.on_blur = _on_blur_btn
+    make_focusable_button(theme_btn)
 
     header = ft.Container(
         padding=ft.Padding.only(left=24, right=24, top=24, bottom=8),
@@ -315,7 +261,7 @@ def build_home_view(
                 ft.Row(
                     controls=[
                         ft.Image(src="icon.png", width=32, height=32, fit="contain"),
-                        ft.Text("Nkiri TV", size=24, weight=ft.FontWeight.BOLD),
+                        ft.Text(APP_NAME, size=24, weight=ft.FontWeight.BOLD),
                     ],
                     spacing=12,
                 ),
@@ -331,7 +277,7 @@ def build_home_view(
         content=ft.Row(
             [
                 ft.Icon(ft.Icons.ARROW_BACK_IOS_NEW_ROUNDED, color=ft.Colors.ON_SURFACE_VARIANT),
-                ft.Text("Previous", color=ft.Colors.ON_SURFACE_VARIANT),
+                ft.Text(LBL_PREVIOUS, color=ft.Colors.ON_SURFACE_VARIANT),
             ],
             spacing=8,
         ),
@@ -342,13 +288,12 @@ def build_home_view(
         on_click=on_prev_page,
     )
     prev_btn.tab_index = 3
-    prev_btn.on_focus = lambda e: _style_focusable(e.control, True)
-    prev_btn.on_blur = lambda e: _style_focusable(e.control, False)
+    make_focusable_border(prev_btn)
 
     next_btn = ft.Container(
         content=ft.Row(
             [
-                ft.Text("Next", color=ft.Colors.ON_SURFACE_VARIANT),
+                ft.Text(LBL_NEXT, color=ft.Colors.ON_SURFACE_VARIANT),
                 ft.Icon(ft.Icons.ARROW_FORWARD_IOS_ROUNDED, color=ft.Colors.ON_SURFACE_VARIANT),
             ],
             spacing=8,
@@ -360,8 +305,7 @@ def build_home_view(
         on_click=on_next_page,
     )
     next_btn.tab_index = 4
-    next_btn.on_focus = lambda e: _style_focusable(e.control, True)
-    next_btn.on_blur = lambda e: _style_focusable(e.control, False)
+    make_focusable_border(next_btn)
 
     scroll_content = ft.Column(
         controls=[header, latest_grid],

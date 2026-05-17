@@ -1,6 +1,12 @@
+import asyncio
 import flet as ft
 from core.state import state, Content
 from core.theme import AppColors
+from core.focus_manager import make_focusable_card, make_focusable_button
+from core.constants import (
+    LBL_SEARCH_HINT, LBL_NO_RESULTS, LBL_SEARCH_EMPTY,
+    MAX_SEARCH_QUERY_LENGTH,
+)
 
 
 def build_search_view(
@@ -13,80 +19,32 @@ def build_search_view(
     CARD_HEIGHT = 280
 
     search_spinner = ft.ProgressRing(color=AppColors.PRIMARY, stroke_width=3, width=20, height=20, visible=False)
+    _debounce_task: asyncio.Task | None = None
 
-    search_field = ft.TextField(
-        hint_text="Search movies, series...",
-        color=ft.Colors.ON_SURFACE,
-        bgcolor=ft.Colors.with_opacity(0.05, ft.Colors.ON_SURFACE),
-        border_color=ft.Colors.TRANSPARENT,
-        border_radius=16,
-        prefix_icon=ft.Icons.SEARCH_ROUNDED,
-        content_padding=20,
-        text_size=16,
-        on_submit=lambda e: do_search(e.data.strip()),
-        focused_border_color=AppColors.PRIMARY,
-        focused_bgcolor=ft.Colors.with_opacity(0.1, AppColors.PRIMARY),
-    )
+    def _cancel_debounce():
+        nonlocal _debounce_task
+        if _debounce_task and not _debounce_task.done():
+            _debounce_task.cancel()
 
-    results_grid = ft.ResponsiveRow(
-        spacing=16,
-        run_spacing=16,
-    )
+    async def _debounced_search(query: str):
+        nonlocal _debounce_task
+        _cancel_debounce()
+        _debounce_task = asyncio.create_task(_delayed_search(query))
+
+    async def _delayed_search(query: str):
+        await asyncio.sleep(0.5)
+        if query and not state.is_loading:
+            page_obj.run_task(on_search, query)
 
     def do_search(query: str):
         if not query or state.is_loading:
             return
+        if len(query) > MAX_SEARCH_QUERY_LENGTH:
+            query = query[:MAX_SEARCH_QUERY_LENGTH]
         search_btn.disabled = True
         search_spinner.visible = True
         page_obj.update()
         page_obj.run_task(on_search, query)
-
-    def _on_focus_card(e, ctrl):
-        ctrl.scale = 1.05
-        ctrl.shadow = ft.BoxShadow(
-            spread_radius=2,
-            blur_radius=15,
-            color=ft.Colors.with_opacity(0.3, AppColors.PRIMARY),
-            offset=ft.Offset(0, 8),
-        )
-        try:
-            ctrl.update()
-        except Exception:
-            pass
-
-    def _on_blur_card(e, ctrl):
-        ctrl.scale = 1.0
-        ctrl.shadow = None
-        try:
-            ctrl.update()
-        except Exception:
-            pass
-
-    def _style_focusable(control, focused):
-        if focused:
-            control.bgcolor = ft.Colors.with_opacity(0.1, AppColors.PRIMARY)
-            control.border = ft.Border.all(2, AppColors.PRIMARY)
-        else:
-            control.bgcolor = None
-            control.border = ft.Border.all(1.5, AppColors.PRIMARY)
-        try:
-            control.update()
-        except Exception:
-            pass
-
-    def _on_focus_btn(e):
-        e.control.bgcolor = ft.Colors.with_opacity(0.1, AppColors.PRIMARY)
-        try:
-            e.control.update()
-        except Exception:
-            pass
-
-    def _on_blur_btn(e):
-        e.control.bgcolor = None
-        try:
-            e.control.update()
-        except Exception:
-            pass
 
     def _build_card(content: Content, idx: int):
         img = ft.Image(
@@ -164,11 +122,10 @@ def build_search_view(
             ink=True,
             height=CARD_HEIGHT,
             key=f"search_card_{idx}",
-            on_click=lambda _: on_select_content(content),
+            on_click=lambda _, c=content: on_select_content(c),
         )
         card_container.tab_index = idx + 2
-        card_container.on_focus = lambda e: _on_focus_card(e, card_container)
-        card_container.on_blur = lambda e: _on_blur_card(e, card_container)
+        make_focusable_card(card_container)
 
         wrapper = ft.Container(
             content=card_container,
@@ -186,7 +143,7 @@ def build_search_view(
         elif not state.search_results and state.search_query:
             loading_indicator.visible = False
             empty_state.visible = True
-            empty_state.controls[1].value = f"No results found for '{state.search_query}'"
+            empty_state.controls[1].value = LBL_NO_RESULTS.format(query=state.search_query)
         else:
             loading_indicator.visible = False
             empty_state.visible = False
@@ -195,6 +152,26 @@ def build_search_view(
         page_obj.update()
 
     page_obj.refresh_search_results = refresh_results
+
+    search_field = ft.TextField(
+        hint_text=LBL_SEARCH_HINT,
+        color=ft.Colors.ON_SURFACE,
+        bgcolor=ft.Colors.with_opacity(0.05, ft.Colors.ON_SURFACE),
+        border_color=ft.Colors.TRANSPARENT,
+        border_radius=16,
+        prefix_icon=ft.Icons.SEARCH_ROUNDED,
+        content_padding=20,
+        text_size=16,
+        on_submit=lambda e: do_search(e.control.value.strip()),
+        on_change=lambda e: _debounced_search(e.control.value.strip()),
+        focused_border_color=AppColors.PRIMARY,
+        focused_bgcolor=ft.Colors.with_opacity(0.1, AppColors.PRIMARY),
+    )
+
+    results_grid = ft.ResponsiveRow(
+        spacing=16,
+        run_spacing=16,
+    )
 
     loading_indicator = ft.Container(
         expand=True,
@@ -206,7 +183,7 @@ def build_search_view(
     empty_state = ft.Column(
         [
             ft.Icon(ft.Icons.SEARCH_OFF_ROUNDED, size=64, color=ft.Colors.ON_SURFACE_VARIANT),
-            ft.Text("Search for movies, series, dramas...", size=16, color=ft.Colors.ON_SURFACE_VARIANT),
+            ft.Text(LBL_SEARCH_EMPTY, size=16, color=ft.Colors.ON_SURFACE_VARIANT),
         ],
         horizontal_alignment=ft.CrossAxisAlignment.CENTER,
         alignment=ft.MainAxisAlignment.CENTER,
@@ -218,22 +195,20 @@ def build_search_view(
         padding=10,
         border_radius=10,
         ink=True,
-        on_click=lambda _: on_back(),
+        on_click=lambda _=None: on_back(),
     )
     back_btn.tab_index = 1
-    back_btn.on_focus = _on_focus_btn
-    back_btn.on_blur = _on_blur_btn
+    make_focusable_button(back_btn)
 
     search_btn = ft.Container(
         content=ft.Icon(ft.Icons.SEARCH_ROUNDED, color=ft.Colors.PRIMARY),
         padding=10,
         border_radius=10,
         ink=True,
-        on_click=lambda _: do_search(search_field.value),
+        on_click=lambda _=None: do_search(search_field.value),
     )
     search_btn.tab_index = 2
-    search_btn.on_focus = _on_focus_btn
-    search_btn.on_blur = _on_blur_btn
+    make_focusable_button(search_btn)
 
     header = ft.Container(
         padding=ft.Padding.only(left=24, right=24, top=24, bottom=16),

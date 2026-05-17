@@ -1,5 +1,6 @@
 import json
 import time
+import asyncio
 import aiosqlite
 import os
 
@@ -8,6 +9,7 @@ class Cache:
     def __init__(self, db_path: str = "storage/data/seriestv.db"):
         self.db_path = os.path.abspath(db_path)
         self._db: aiosqlite.Connection | None = None
+        self._sweep_task: asyncio.Task | None = None
 
     async def _get_db(self) -> aiosqlite.Connection:
         if self._db is None:
@@ -16,6 +18,7 @@ class Cache:
                 os.makedirs(db_dir, exist_ok=True)
             self._db = await aiosqlite.connect(self.db_path)
             await self._db.execute("PRAGMA journal_mode=WAL;")
+            await self._db.execute("PRAGMA synchronous=NORMAL;")
             await self._db.execute("""
                 CREATE TABLE IF NOT EXISTS cache (
                     key TEXT PRIMARY KEY,
@@ -23,6 +26,9 @@ class Cache:
                     expires INTEGER
                 )
             """)
+            await self._db.execute(
+                "CREATE INDEX IF NOT EXISTS idx_cache_expires ON cache(expires)"
+            )
             await self._db.commit()
         return self._db
 
@@ -68,7 +74,31 @@ class Cache:
         await db.execute("DELETE FROM cache")
         await db.commit()
 
+    async def sweep_expired(self):
+        db = await self._get_db()
+        await db.execute(
+            "DELETE FROM cache WHERE expires <= ?", (int(time.time()),)
+        )
+        await db.commit()
+
+    async def start_sweep(self, interval: int = 300):
+        async def _sweep_loop():
+            while True:
+                await asyncio.sleep(interval)
+                try:
+                    await self.sweep_expired()
+                except Exception:
+                    pass
+
+        self._sweep_task = asyncio.create_task(_sweep_loop())
+
     async def close(self):
+        if self._sweep_task:
+            self._sweep_task.cancel()
+            try:
+                await self._sweep_task
+            except asyncio.CancelledError:
+                pass
         if self._db:
             await self._db.close()
             self._db = None

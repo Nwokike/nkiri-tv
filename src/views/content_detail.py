@@ -1,6 +1,11 @@
 import flet as ft
 from core.state import state, Episode
 from core.theme import AppColors
+from core.focus_manager import make_focusable_button, make_focusable_border
+from core.constants import (
+    LBL_EPISODES, LBL_DOWNLOAD_LINKS, LBL_EPISODE, LBL_SEASON,
+    LBL_PAGE, LBL_PREVIOUS, LBL_NEXT,
+)
 
 
 def build_content_detail_view(
@@ -41,62 +46,27 @@ def build_content_detail_view(
             container.shadow = None
         container.update()
 
-    def _on_focus_ep(e, ctrl):
-        ctrl.scale = 1.03
-        ctrl.bgcolor = ft.Colors.with_opacity(0.2, AppColors.PRIMARY)
-        try:
-            ctrl.update()
-        except Exception:
-            pass
-
-    def _on_blur_ep(e, ctrl):
-        ctrl.scale = 1.0
-        ctrl.bgcolor = AppColors.get_glass_bg(page_obj)
-        try:
-            ctrl.update()
-        except Exception:
-            pass
-
-    def _style_focusable(control, focused):
-        if focused:
-            control.bgcolor = ft.Colors.with_opacity(0.1, AppColors.PRIMARY)
-            control.border = ft.Border.all(2, AppColors.PRIMARY)
-        else:
-            control.bgcolor = None
-            control.border = ft.Border.all(1.5, AppColors.PRIMARY)
-        try:
-            control.update()
-        except Exception:
-            pass
-
-    def _on_focus_btn(e):
-        e.control.bgcolor = ft.Colors.with_opacity(0.1, AppColors.PRIMARY)
-        try:
-            e.control.update()
-        except Exception:
-            pass
-
-    def _on_blur_btn(e):
-        e.control.bgcolor = None
-        try:
-            e.control.update()
-        except Exception:
-            pass
-
     def _build_episode_card(ep: Episode, idx: int) -> ft.Container:
         poster_url = content.poster if content and content.poster else ""
 
-        img = ft.Image(
-            src=poster_url,
-            fit="cover",
-            expand=True,
+        is_playing = (
+            state.current_content_id == content.nkiri_id
+            and state.current_episode_index == idx
         )
-        if not poster_url:
-            img = ft.Container(
-                content=ft.Icon(ft.Icons.PLAY_ARROW_ROUNDED, size=48, color=ft.Colors.WHITE),
+
+        img = ft.Container(
+            content=ft.Icon(ft.Icons.PLAY_ARROW_ROUNDED, size=48, color=ft.Colors.WHITE),
+            expand=True,
+            bgcolor=ft.Colors.with_opacity(0.15, ft.Colors.ON_SURFACE),
+            alignment=ft.Alignment.CENTER,
+        )
+
+        if poster_url:
+            img = ft.Image(
+                src=poster_url,
+                fit="cover",
                 expand=True,
-                bgcolor=ft.Colors.with_opacity(0.15, ft.Colors.ON_SURFACE),
-                alignment=ft.Alignment.CENTER,
+                opacity=0.4 if is_playing else 0.6,
             )
 
         gradient = ft.Container(
@@ -112,16 +82,22 @@ def build_content_detail_view(
         )
 
         ep_text = ft.Text(
-            f"Episode {ep.episode_number}",
+            f"{LBL_EPISODE} {ep.episode_number}",
             color=ft.Colors.WHITE,
             weight=ft.FontWeight.BOLD,
             size=16,
         )
 
         meta_text = ft.Text(
-            f"S{ep.season}" + (f" \u2022 {ep.size}" if ep.size else ""),
+            f"{LBL_SEASON}{ep.season}" + (f" \u2022 {ep.size}" if ep.size else ""),
             color=ft.Colors.WHITE_70,
             size=12,
+        )
+
+        play_icon = ft.Icon(
+            ft.Icons.PLAY_CIRCLE_FILL_ROUNDED if not is_playing else ft.Icons.EQUALIZER_ROUNDED,
+            size=40,
+            color=AppColors.PRIMARY if is_playing else ft.Colors.WHITE,
         )
 
         card_content = ft.Stack(
@@ -140,7 +116,7 @@ def build_content_detail_view(
                 ft.Container(
                     alignment=ft.Alignment.CENTER_RIGHT,
                     padding=16,
-                    content=ft.Icon(ft.Icons.PLAY_CIRCLE_FILL_ROUNDED, size=40, color=ft.Colors.WHITE),
+                    content=play_icon,
                 )
             ],
             expand=True,
@@ -156,18 +132,34 @@ def build_content_detail_view(
             ink=True,
             height=EP_CARD_HEIGHT,
             key=f"ep_card_{idx}",
-            on_click=lambda _, i=idx: page_obj.run_task(on_play_episode, content, i),
-            on_hover=lambda e: on_hover_ep(e, card_container),
+            on_click=lambda _, i=idx, c=content: page_obj.run_task(on_play_episode, c, i),
         )
+        card_container.on_hover = lambda e, ctr=card_container: on_hover_ep(e, ctr)
         card_container.tab_index = idx + 2
-        card_container.on_focus = lambda e: _on_focus_ep(e, card_container)
-        card_container.on_blur = lambda e: _on_blur_ep(e, card_container)
+        card_container.on_focus = lambda e, ctr=card_container: _on_focus_ep(e, ctr)
+        card_container.on_blur = lambda e, ctr=card_container: _on_blur_ep(e, ctr)
 
         wrapper = ft.Container(
             content=card_container,
             col={"xs": 12, "sm": 6, "md": 4, "lg": 4, "xl": 3},
         )
         return wrapper
+
+    def _on_focus_ep(e, ctrl):
+        ctrl.scale = 1.03
+        ctrl.bgcolor = ft.Colors.with_opacity(0.2, AppColors.PRIMARY)
+        try:
+            ctrl.update()
+        except Exception:
+            pass
+
+    def _on_blur_ep(e, ctrl):
+        ctrl.scale = 1.0
+        ctrl.bgcolor = AppColors.get_glass_bg(page_obj)
+        try:
+            ctrl.update()
+        except Exception:
+            pass
 
     def refresh_episodes():
         episode_grid.controls.clear()
@@ -183,7 +175,7 @@ def build_content_detail_view(
         prev_btn.content = ft.Row(
             [
                 ft.Icon(ft.Icons.ARROW_BACK_IOS_NEW_ROUNDED, color=ft.Colors.ON_SURFACE if state.episodes_page > 1 else ft.Colors.ON_SURFACE_VARIANT),
-                ft.Text("Previous", color=ft.Colors.ON_SURFACE if state.episodes_page > 1 else ft.Colors.ON_SURFACE_VARIANT),
+                ft.Text(LBL_PREVIOUS, color=ft.Colors.ON_SURFACE if state.episodes_page > 1 else ft.Colors.ON_SURFACE_VARIANT),
             ],
             spacing=8,
         )
@@ -193,7 +185,7 @@ def build_content_detail_view(
 
         next_btn.content = ft.Row(
             [
-                ft.Text("Next", color=ft.Colors.ON_SURFACE if state.episodes_has_more else ft.Colors.ON_SURFACE_VARIANT),
+                ft.Text(LBL_NEXT, color=ft.Colors.ON_SURFACE if state.episodes_has_more else ft.Colors.ON_SURFACE_VARIANT),
                 ft.Icon(ft.Icons.ARROW_FORWARD_IOS_ROUNDED, color=ft.Colors.ON_SURFACE if state.episodes_has_more else ft.Colors.ON_SURFACE_VARIANT),
             ],
             spacing=8,
@@ -202,7 +194,7 @@ def build_content_detail_view(
         next_btn.tab_index = num_eps + 3
 
         ep_nav = ft.Row(
-            controls=[prev_btn, prev_spinner, ft.Text(f"Page {state.episodes_page}", color=ft.Colors.ON_SURFACE, weight=ft.FontWeight.W_500), next_spinner, next_btn],
+            controls=[prev_btn, prev_spinner, ft.Text(f"{LBL_PAGE} {state.episodes_page}", color=ft.Colors.ON_SURFACE, weight=ft.FontWeight.W_500), next_spinner, next_btn],
             alignment=ft.MainAxisAlignment.CENTER,
             spacing=16,
         )
@@ -315,8 +307,7 @@ def build_content_detail_view(
         on_click=on_back,
     )
     back_btn.tab_index = 1
-    back_btn.on_focus = _on_focus_btn
-    back_btn.on_blur = _on_blur_btn
+    make_focusable_button(back_btn)
 
     header = ft.Container(
         padding=ft.Padding.all(32),
@@ -343,7 +334,7 @@ def build_content_detail_view(
     episodes_header = ft.Container(
         padding=ft.Padding.only(left=32, right=32, bottom=16),
         content=ft.Text(
-            "Episodes" if content.content_type == "series" else "Download Links",
+            LBL_EPISODES if content.content_type == "series" else LBL_DOWNLOAD_LINKS,
             size=24,
             weight=ft.FontWeight.BOLD,
             color=ft.Colors.ON_SURFACE,
@@ -393,7 +384,7 @@ def build_content_detail_view(
         content=ft.Row(
             [
                 ft.Icon(ft.Icons.ARROW_BACK_IOS_NEW_ROUNDED, color=ft.Colors.ON_SURFACE_VARIANT),
-                ft.Text("Previous", color=ft.Colors.ON_SURFACE_VARIANT),
+                ft.Text(LBL_PREVIOUS, color=ft.Colors.ON_SURFACE_VARIANT),
             ],
             spacing=8,
         ),
@@ -404,13 +395,12 @@ def build_content_detail_view(
         on_click=on_prev_ep_page,
     )
     prev_btn.tab_index = 2
-    prev_btn.on_focus = lambda e: _style_focusable(e.control, True)
-    prev_btn.on_blur = lambda e: _style_focusable(e.control, False)
+    make_focusable_border(prev_btn)
 
     next_btn = ft.Container(
         content=ft.Row(
             [
-                ft.Text("Next", color=ft.Colors.ON_SURFACE_VARIANT),
+                ft.Text(LBL_NEXT, color=ft.Colors.ON_SURFACE_VARIANT),
                 ft.Icon(ft.Icons.ARROW_FORWARD_IOS_ROUNDED, color=ft.Colors.ON_SURFACE_VARIANT),
             ],
             spacing=8,
@@ -422,8 +412,7 @@ def build_content_detail_view(
         on_click=on_next_ep_page,
     )
     next_btn.tab_index = 3
-    next_btn.on_focus = lambda e: _style_focusable(e.control, True)
-    next_btn.on_blur = lambda e: _style_focusable(e.control, False)
+    make_focusable_border(next_btn)
 
     refresh_episodes()
 

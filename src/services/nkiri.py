@@ -7,11 +7,12 @@ from core.state import Content, Episode, Source
 
 
 class NkiriScraper:
-    def __init__(self):
+    def __init__(self, cache=None):
         self._client: httpx.AsyncClient | None = None
-        self._mem_cache = {}
-        self._mem_ttl = {}
-        self._resolve_cache = {}
+        self._mem_cache: dict = {}
+        self._mem_ttl: dict = {}
+        self._resolve_cache: dict = {}
+        self._cache = cache
 
     def _get_client(self) -> httpx.AsyncClient:
         if self._client is None or self._client.is_closed:
@@ -36,22 +37,43 @@ class NkiriScraper:
         self._mem_cache[key] = value
         self._mem_ttl[key] = time.time() + ttl
 
+    async def _get_cached(self, key: str, ttl: int = 300):
+        val = self._get_mem(key, ttl)
+        if val is not None:
+            return val
+        if self._cache:
+            raw = await self._cache.get(key)
+            if raw:
+                import json
+                try:
+                    data = json.loads(raw)
+                    self._set_mem(key, data, ttl)
+                    return data
+                except Exception:
+                    pass
+        return None
+
+    async def _set_cached(self, key: str, value, ttl: int = 300):
+        self._set_mem(key, value, ttl)
+        if self._cache:
+            import json
+            try:
+                await self._cache.set(key, json.dumps(value, default=str), ttl)
+            except Exception:
+                pass
+
     @staticmethod
     def _clean_title(raw_title: str) -> tuple[str, str, str]:
-        # Extract plain text from the raw HTML title
         raw_text = BeautifulSoup(raw_title, "html.parser").get_text(strip=True)
-        # Determine content type using the original text (includes any "movie"/"film" suffix)
         lower_raw = raw_text.lower()
         content_type = "series"
         if any(kw in lower_raw for kw in ["movie", "film"]):
             content_type = "movie"
         elif any(kw in lower_raw for kw in ["s01", "s02", "s03", "s04", "s05", "s06", "s07", "s08", "s09", "s10", "season", "episode"]):
             content_type = "series"
-        # Clean the title for display: strip pipe suffix and any download suffix
         title = re.sub(r'\s*\|\s*.*$', '', raw_text).strip()
         title = re.sub(r'\s*Download\s*.*$', '', title, flags=re.IGNORECASE).strip()
 
-        # Extract year from the cleaned title
         year_match = re.search(r'\((\d{4})\)', title)
         year = year_match.group(1) if year_match else ""
         if year:
@@ -84,20 +106,18 @@ class NkiriScraper:
         episodes = []
 
         download_links = soup.find_all("a", href=re.compile(r"downloadwella\.com"))
-        fallback = None  # For movies without episode info
+        fallback = None
 
         for link in download_links:
             href = link["href"]
             title_text = link.get_text(strip=True)
 
-            # Derive a readable title if link text is generic or empty
             if not title_text or "download" in title_text.lower() or "click" in title_text.lower():
                 filename = href.split("/")[-1]
                 title_text = filename.replace(".html", "").replace("(THENKIRI.COM)", "").replace(".", " ").strip()
 
             title_text = re.sub(r'\s+', ' ', title_text).strip()
 
-            # Try to find season/episode patterns
             episode_match = re.search(r'[Ss](\d+)[Ee](\d+)', title_text)
             if not episode_match:
                 episode_match = re.search(r'[Ss]eason\s*(\d+)\s*[Ee]pisode\s*(\d+)', title_text, re.IGNORECASE)
@@ -126,11 +146,9 @@ class NkiriScraper:
                     size=size,
                 ))
             else:
-                # No episode pattern found; remember as possible movie link
                 if fallback is None:
                     fallback = (href, title_text)
 
-        # If no episodes parsed but we have a fallback (likely a movie), create a single entry
         if not episodes and fallback:
             href, title_text = fallback
             size_match = re.search(r'(\d+(?:\.\d+)?\s*[MGK]B)', title_text)
@@ -147,9 +165,43 @@ class NkiriScraper:
 
         return episodes
 
+    async def _fetch_posters(self, client: httpx.AsyncClient, media_ids: list[int]) -> dict[int, str]:
+        if not media_ids:
+            return {}
+        ids_str = ",".join(str(x) for x in media_ids)
+        mr = await client.get(
+            f"{NKIRI_API}/media",
+            params={"include": ids_str, "per_page": 20, "_fields": "id,source_url"},
+        )
+        if mr.status_code != 200:
+            return {}
+        try:
+            return {m["id"]: m.get("source_url", "") for m in mr.json()}
+        except Exception:
+            return {}
+
+    def _posts_to_content(self, posts: list[dict], poster_map: dict[int, str]) -> list[Content]:
+        results = []
+        for post in posts:
+            raw_title = post.get("title", {}).get("rendered", "")
+            title, year, content_type = self._clean_title(raw_title)
+            poster = poster_map.get(post.get("featured_media", 0), "")
+
+            results.append(Content(
+                nkiri_id=post.get("id", 0),
+                title=title,
+                poster=poster,
+                year=year,
+                rating="",
+                description="",
+                categories=[],
+                content_type=content_type,
+            ))
+        return results
+
     async def latest_releases(self, page: int = 1, category: str = "TV Series") -> tuple[list[Content], bool]:
         cache_key = f"latest_{category}_{page}"
-        cached = self._get_mem(cache_key)
+        cached = await self._get_cached(cache_key, ttl=300)
         if cached:
             return cached
 
@@ -176,47 +228,18 @@ class NkiriScraper:
             return [], False
 
         media_ids = [p["featured_media"] for p in posts if p.get("featured_media")]
-        poster_map = {}
-        if media_ids:
-            ids_str = ",".join(str(x) for x in media_ids)
-            mr = await client.get(
-                f"{NKIRI_API}/media",
-                params={"include": ids_str, "per_page": 20, "_fields": "id,source_url"},
-            )
-            if mr.status_code == 200:
-                try:
-                    for m in mr.json():
-                        poster_map[m["id"]] = m.get("source_url", "")
-                except Exception:
-                    pass
+        poster_map = await self._fetch_posters(client, media_ids)
 
-        results = []
-        for post in posts:
-            raw_title = post.get("title", {}).get("rendered", "")
-            title, year, content_type = self._clean_title(raw_title)
-
-            poster = poster_map.get(post.get("featured_media", 0), "")
-
-            results.append(Content(
-                id=post.get("id", 0),
-                title=title,
-                poster=poster,
-                year=year,
-                rating="",
-                description="",
-                nkiri_id=post.get("id", 0),
-                categories=[],
-                content_type=content_type,
-            ))
+        results = self._posts_to_content(posts, poster_map)
 
         has_more = len(posts) == 12
         result = (results, has_more)
-        self._set_mem(cache_key, result, ttl=300)
+        await self._set_cached(cache_key, result, ttl=300)
         return result
 
     async def search(self, query: str, page: int = 1) -> tuple[list[Content], bool]:
         cache_key = f"search_{query}_{page}"
-        cached = self._get_mem(cache_key, ttl=600)
+        cached = await self._get_cached(cache_key, ttl=600)
         if cached:
             return cached
 
@@ -239,47 +262,18 @@ class NkiriScraper:
             return [], False
 
         media_ids = [p["featured_media"] for p in posts if p.get("featured_media")]
-        poster_map = {}
-        if media_ids:
-            ids_str = ",".join(str(x) for x in media_ids)
-            mr = await client.get(
-                f"{NKIRI_API}/media",
-                params={"include": ids_str, "per_page": 20, "_fields": "id,source_url"},
-            )
-            if mr.status_code == 200:
-                try:
-                    for m in mr.json():
-                        poster_map[m["id"]] = m.get("source_url", "")
-                except Exception:
-                    pass
+        poster_map = await self._fetch_posters(client, media_ids)
 
-        results = []
-        for post in posts:
-            raw_title = post.get("title", {}).get("rendered", "")
-            title, year, content_type = self._clean_title(raw_title)
-
-            poster = poster_map.get(post.get("featured_media", 0), "")
-
-            results.append(Content(
-                id=post.get("id", 0),
-                title=title,
-                poster=poster,
-                year=year,
-                rating="",
-                description="",
-                nkiri_id=post.get("id", 0),
-                categories=[],
-                content_type=content_type,
-            ))
+        results = self._posts_to_content(posts, poster_map)
 
         has_more = len(posts) == 12
         result = (results, has_more)
-        self._set_mem(cache_key, result, ttl=600)
+        await self._set_cached(cache_key, result, ttl=600)
         return result
 
     async def episodes(self, nkiri_id: int) -> list[Episode]:
         cache_key = f"episodes_{nkiri_id}"
-        cached = self._get_mem(cache_key, ttl=3600)
+        cached = await self._get_cached(cache_key, ttl=3600)
         if cached:
             return cached
 
@@ -298,7 +292,7 @@ class NkiriScraper:
 
         content_html = post.get("content", {}).get("rendered", "")
         result = self._parse_episodes(content_html)
-        self._set_mem(cache_key, result, ttl=3600)
+        await self._set_cached(cache_key, result, ttl=3600)
         return result
 
     async def resolve_episode(self, downloadwella_url: str) -> Source | None:

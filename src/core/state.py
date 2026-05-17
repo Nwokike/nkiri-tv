@@ -4,13 +4,12 @@ from dataclasses import dataclass, field
 
 @dataclass
 class Content:
-    id: int
+    nkiri_id: int
     title: str
     poster: str
     year: str
     rating: str
     description: str
-    nkiri_id: int
     categories: list[str] = field(default_factory=list)
     content_type: str = ""
 
@@ -39,12 +38,12 @@ class Source:
 class AppState:
     is_loading: bool = False
     search_query: str = ""
-    search_results: list = None
-    latest_releases: list = None
+    search_results: list[Content] = []
+    latest_releases: list[Content] = []
     latest_page: int = 1
     latest_has_more: bool = True
     search_has_more: bool = True
-    episodes: list = None
+    episodes: list[Episode] = []
     episodes_has_more: bool = True
     episodes_page: int = 1
     selected_source: Source | None = None

@@ -2,6 +2,11 @@ import flet as ft
 import flet_video as fv
 from core.theme import AppColors
 from core.state import state
+from core.focus_manager import make_focusable_button
+from core.constants import (
+    LBL_RESOLVING, ERR_NO_SOURCE, ERR_LOADING,
+    ERR_PLAYBACK, ERR_PLAYBACK_ENDED,
+)
 
 
 def build_player_view(
@@ -20,7 +25,7 @@ def build_player_view(
     )
 
     status_text = ft.Text(
-        "Resolving Stream...",
+        LBL_RESOLVING,
         size=16,
         color=ft.Colors.WHITE,
         weight=ft.FontWeight.W_500,
@@ -51,20 +56,6 @@ def build_player_view(
             page_obj.views.pop()
             page_obj.update()
 
-    def _on_focus_btn(e):
-        e.control.bgcolor = ft.Colors.with_opacity(0.5, ft.Colors.BLACK)
-        try:
-            e.control.update()
-        except Exception:
-            pass
-
-    def _on_blur_btn(e):
-        e.control.bgcolor = ft.Colors.with_opacity(0.3, ft.Colors.BLACK)
-        try:
-            e.control.update()
-        except Exception:
-            pass
-
     back_btn = ft.Container(
         left=24,
         top=40,
@@ -78,8 +69,7 @@ def build_player_view(
         ),
     )
     back_btn.tab_index = 1
-    back_btn.on_focus = _on_focus_btn
-    back_btn.on_blur = _on_blur_btn
+    make_focusable_button(back_btn)
 
     async def start_playback():
         try:
@@ -88,11 +78,11 @@ def build_player_view(
                 video.autoplay = True
                 overlay.visible = False
             else:
-                status_text.value = "No source selected"
+                status_text.value = ERR_NO_SOURCE
                 loading.visible = False
             page_obj.update()
         except Exception:
-            status_text.value = "An error occurred while loading"
+            status_text.value = ERR_LOADING
             loading.visible = False
             page_obj.update()
 
@@ -121,7 +111,7 @@ def _on_error(e, page_obj: ft.Page):
     state.player_error = e.data
     try:
         page_obj.snack_bar = ft.SnackBar(
-            ft.Text("Playback error", color=ft.Colors.WHITE),
+            ft.Text(ERR_PLAYBACK, color=ft.Colors.WHITE),
             bgcolor=AppColors.ERROR,
             duration=3000,
         )
@@ -134,7 +124,7 @@ def _on_error(e, page_obj: ft.Page):
 def _on_ended(page_obj: ft.Page):
     try:
         page_obj.snack_bar = ft.SnackBar(
-            ft.Text("Playback ended", color=ft.Colors.WHITE),
+            ft.Text(ERR_PLAYBACK_ENDED, color=ft.Colors.WHITE),
             bgcolor=AppColors.SUCCESS,
             duration=3000,
         )
