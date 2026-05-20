@@ -25,15 +25,17 @@ def build_home_view(
 
     def on_hover_card(e, container):
         if e.data == "true":
-            container.scale = 1.05
+            container.scale = 1.08
+            container.border = ft.Border.all(4, AppColors.PRIMARY)
             container.shadow = ft.BoxShadow(
-                spread_radius=2,
-                blur_radius=15,
-                color=ft.Colors.with_opacity(0.3, AppColors.PRIMARY),
-                offset=ft.Offset(0, 8),
+                spread_radius=6,
+                blur_radius=30,
+                color=ft.Colors.with_opacity(0.7, AppColors.PRIMARY),
+                offset=ft.Offset(0, 12),
             )
         else:
             container.scale = 1.0
+            container.border = ft.Border.all(0, ft.Colors.TRANSPARENT)
             container.shadow = None
         container.update()
 
@@ -96,14 +98,18 @@ def build_home_view(
             expand=True,
         )
 
-        card_container = ft.Container(
+        card_inner = ft.Container(
             content=content_stack,
             border_radius=12,
             clip_behavior="antiAlias",
+            height=CARD_HEIGHT,
+        )
+
+        card_container = ft.Container(
+            content=card_inner,
             animate_scale=300,
             animate=300,
             ink=True,
-            height=CARD_HEIGHT,
             key=f"home_card_{idx}",
             on_click=lambda _, c=content: on_select_content(c),
         )
@@ -113,6 +119,7 @@ def build_home_view(
 
         wrapper = ft.Container(
             content=card_container,
+            padding=4,
             col={"xs": 6, "sm": 4, "md": 3, "lg": 2, "xl": 2},
         )
         return wrapper

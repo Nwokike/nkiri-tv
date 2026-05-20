@@ -7,12 +7,11 @@ from core.state import Content, Episode, Source
 
 
 class NkiriScraper:
-    def __init__(self, cache=None):
+    def __init__(self):
         self._client: httpx.AsyncClient | None = None
         self._mem_cache: dict = {}
         self._mem_ttl: dict = {}
         self._resolve_cache: dict = {}
-        self._cache = cache
 
     def _get_client(self) -> httpx.AsyncClient:
         if self._client is None or self._client.is_closed:
@@ -36,31 +35,6 @@ class NkiriScraper:
     def _set_mem(self, key: str, value, ttl: int = 300):
         self._mem_cache[key] = value
         self._mem_ttl[key] = time.time() + ttl
-
-    async def _get_cached(self, key: str, ttl: int = 300):
-        val = self._get_mem(key, ttl)
-        if val is not None:
-            return val
-        if self._cache:
-            raw = await self._cache.get(key)
-            if raw:
-                import json
-                try:
-                    data = json.loads(raw)
-                    self._set_mem(key, data, ttl)
-                    return data
-                except Exception:
-                    pass
-        return None
-
-    async def _set_cached(self, key: str, value, ttl: int = 300):
-        self._set_mem(key, value, ttl)
-        if self._cache:
-            import json
-            try:
-                await self._cache.set(key, json.dumps(value, default=str), ttl)
-            except Exception:
-                pass
 
     @staticmethod
     def _clean_title(raw_title: str) -> tuple[str, str, str]:
@@ -201,7 +175,7 @@ class NkiriScraper:
 
     async def latest_releases(self, page: int = 1, category: str = "TV Series") -> tuple[list[Content], bool]:
         cache_key = f"latest_{category}_{page}"
-        cached = await self._get_cached(cache_key, ttl=300)
+        cached = self._get_mem(cache_key, ttl=300)
         if cached:
             return cached
 
@@ -234,12 +208,12 @@ class NkiriScraper:
 
         has_more = len(posts) == 12
         result = (results, has_more)
-        await self._set_cached(cache_key, result, ttl=300)
+        self._set_mem(cache_key, result, ttl=300)
         return result
 
     async def search(self, query: str, page: int = 1) -> tuple[list[Content], bool]:
         cache_key = f"search_{query}_{page}"
-        cached = await self._get_cached(cache_key, ttl=600)
+        cached = self._get_mem(cache_key, ttl=600)
         if cached:
             return cached
 
@@ -268,12 +242,12 @@ class NkiriScraper:
 
         has_more = len(posts) == 12
         result = (results, has_more)
-        await self._set_cached(cache_key, result, ttl=600)
+        self._set_mem(cache_key, result, ttl=600)
         return result
 
     async def episodes(self, nkiri_id: int) -> list[Episode]:
         cache_key = f"episodes_{nkiri_id}"
-        cached = await self._get_cached(cache_key, ttl=3600)
+        cached = self._get_mem(cache_key, ttl=3600)
         if cached:
             return cached
 
@@ -292,7 +266,7 @@ class NkiriScraper:
 
         content_html = post.get("content", {}).get("rendered", "")
         result = self._parse_episodes(content_html)
-        await self._set_cached(cache_key, result, ttl=3600)
+        self._set_mem(cache_key, result, ttl=3600)
         return result
 
     async def resolve_episode(self, downloadwella_url: str) -> Source | None:

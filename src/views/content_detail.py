@@ -1,7 +1,7 @@
 import flet as ft
 from core.state import state, Episode
 from core.theme import AppColors
-from core.focus_manager import make_focusable_card, make_focusable_button, make_focusable_border
+from core.focus_manager import make_focusable_button, make_focusable_border
 from core.constants import (
     LBL_EPISODES, LBL_DOWNLOAD_LINKS, LBL_EPISODE, LBL_SEASON,
     LBL_PAGE, LBL_PREVIOUS, LBL_NEXT,
@@ -36,15 +36,17 @@ def build_content_detail_view(
 
     def on_hover_ep(e, container):
         if e.data == "true":
-            container.scale = 1.05
+            container.scale = 1.08
+            container.border = ft.Border.all(4, AppColors.PRIMARY)
             container.shadow = ft.BoxShadow(
-                spread_radius=2,
-                blur_radius=15,
-                color=ft.Colors.with_opacity(0.3, AppColors.PRIMARY),
-                offset=ft.Offset(0, 8),
+                spread_radius=6,
+                blur_radius=30,
+                color=ft.Colors.with_opacity(0.7, AppColors.PRIMARY),
+                offset=ft.Offset(0, 12),
             )
         else:
             container.scale = 1.0
+            container.border = ft.Border.all(0, ft.Colors.TRANSPARENT)
             container.shadow = None
         container.update()
 
@@ -155,34 +157,41 @@ def build_content_detail_view(
             expand=True,
         )
 
-        card_container = ft.Container(
+        card_inner = ft.Container(
             content=content_stack,
             border_radius=12,
             clip_behavior="antiAlias",
+            height=CARD_HEIGHT,
+        )
+
+        card_container = ft.Container(
+            content=card_inner,
             animate_scale=300,
             animate=300,
             ink=True,
-            height=CARD_HEIGHT,
             key=f"ep_card_{idx}",
             on_click=lambda _, i=idx, c=content: page_obj.run_task(on_play_episode, c, i),
         )
         card_container.on_hover = lambda e, ctr=card_container: on_hover_ep(e, ctr)
         card_container.tab_index = idx + 2
-        make_focusable_card(card_container)
+        card_container.on_focus = lambda e, ctr=card_container: _on_focus_ep(e, ctr)
+        card_container.on_blur = lambda e, ctr=card_container: _on_blur_ep(e, ctr)
 
         wrapper = ft.Container(
             content=card_container,
+            padding=4,
             col={"xs": 6, "sm": 4, "md": 3, "lg": 2, "xl": 2},
         )
         return wrapper
 
     def _on_focus_ep(e, ctrl):
-        ctrl.scale = 1.05
+        ctrl.scale = 1.08
+        ctrl.border = ft.Border.all(4, AppColors.PRIMARY)
         ctrl.shadow = ft.BoxShadow(
-            spread_radius=2,
-            blur_radius=15,
-            color=ft.Colors.with_opacity(0.3, AppColors.PRIMARY),
-            offset=ft.Offset(0, 8),
+            spread_radius=6,
+            blur_radius=30,
+            color=ft.Colors.with_opacity(0.7, AppColors.PRIMARY),
+            offset=ft.Offset(0, 12),
         )
         try:
             ctrl.update()
@@ -191,6 +200,7 @@ def build_content_detail_view(
 
     def _on_blur_ep(e, ctrl):
         ctrl.scale = 1.0
+        ctrl.border = ft.Border.all(0, ft.Colors.TRANSPARENT)
         ctrl.shadow = None
         try:
             ctrl.update()

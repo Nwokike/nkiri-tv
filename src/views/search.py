@@ -26,9 +26,12 @@ def build_search_view(
         if _debounce_task and not _debounce_task.done():
             _debounce_task.cancel()
 
-    async def _debounced_search(query: str):
-        nonlocal _debounce_task
+    def on_search_change(e):
+        query = e.control.value.strip() if e.control.value else ""
+        if not query:
+            return
         _cancel_debounce()
+        nonlocal _debounce_task
         _debounce_task = asyncio.create_task(_delayed_search(query))
 
     async def _delayed_search(query: str):
@@ -37,6 +40,7 @@ def build_search_view(
             page_obj.run_task(on_search, query)
 
     def do_search(query: str):
+        _cancel_debounce()
         if not query or state.is_loading:
             return
         if len(query) > MAX_SEARCH_QUERY_LENGTH:
@@ -113,14 +117,18 @@ def build_search_view(
             expand=True,
         )
 
-        card_container = ft.Container(
+        card_inner = ft.Container(
             content=content_stack,
             border_radius=12,
             clip_behavior="antiAlias",
+            height=CARD_HEIGHT,
+        )
+
+        card_container = ft.Container(
+            content=card_inner,
             animate_scale=300,
             animate=300,
             ink=True,
-            height=CARD_HEIGHT,
             key=f"search_card_{idx}",
             on_click=lambda _, c=content: on_select_content(c),
         )
@@ -129,6 +137,7 @@ def build_search_view(
 
         wrapper = ft.Container(
             content=card_container,
+            padding=4,
             col={"xs": 6, "sm": 4, "md": 3, "lg": 3, "xl": 2},
         )
         return wrapper
@@ -163,7 +172,7 @@ def build_search_view(
         content_padding=20,
         text_size=16,
         on_submit=lambda e: do_search(e.control.value.strip()),
-        on_change=lambda e: _debounced_search(e.control.value.strip()),
+        on_change=lambda e: on_search_change(e),
         focused_border_color=AppColors.PRIMARY,
         focused_bgcolor=ft.Colors.with_opacity(0.1, AppColors.PRIMARY),
     )

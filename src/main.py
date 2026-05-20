@@ -104,7 +104,7 @@ class AppController:
         self.page.theme_mode = ft.ThemeMode.SYSTEM
 
         self.cache = Cache()
-        self.scraper = NkiriScraper(cache=self.cache)
+        self.scraper = NkiriScraper()
 
         await self.cache.start_sweep(interval=300)
 

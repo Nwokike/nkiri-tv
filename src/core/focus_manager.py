@@ -22,15 +22,17 @@ class FocusManager:
 
 def apply_focus_scale(control: ft.Container, focused: bool):
     if focused:
-        control.scale = 1.05
+        control.scale = 1.08
+        control.border = ft.Border.all(4, PRIMARY_COLOR)
         control.shadow = ft.BoxShadow(
-            spread_radius=2,
-            blur_radius=15,
-            color=ft.Colors.with_opacity(0.3, PRIMARY_COLOR),
-            offset=ft.Offset(0, 8),
+            spread_radius=6,
+            blur_radius=30,
+            color=ft.Colors.with_opacity(0.7, PRIMARY_COLOR),
+            offset=ft.Offset(0, 12),
         )
     else:
         control.scale = 1.0
+        control.border = ft.Border.all(0, ft.Colors.TRANSPARENT)
         control.shadow = None
     try:
         control.update()
