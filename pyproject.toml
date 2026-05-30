@@ -1,6 +1,6 @@
 [project]
 name = "nkiri-tv"
-version = "0.1.0"
+version = "1.0.0"
 description = "Lightweight client-side Android TV / mobile / desktop app for streaming movies, series, and dramas from Nkiri. Zero server. Built with Python and Flet."
 readme = "README.md"
 requires-python = ">=3.13"

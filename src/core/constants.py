@@ -1,6 +1,6 @@
 APP_NAME = "Nkiri TV"
 APP_TAGLINE = "Movies, Series & Dramas. No server needed."
-APP_VERSION = "0.1.0"
+APP_VERSION = "1.0.0"
 
 ERR_NETWORK = "Network error or stream unavailable."
 ERR_NO_STREAM = "Could not resolve stream."

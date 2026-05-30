@@ -9,7 +9,6 @@ from core.config import (
     KTV_PLAY_STORE_URL,
     KTV_UPTODOWN_URL,
     KTV_DEEP_LINK_SCHEME,
-    EXTERNAL_PLAYER_NAMES,
     DEFAULT_CATEGORY,
 )
 from core.focus_manager import FocusManager
