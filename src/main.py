@@ -6,7 +6,6 @@ import urllib.parse
 from core.theme import AppTheme, AppColors
 from core.state import state, Content
 from core.config import (
-    USE_EXTERNAL_PLAYER,
     KTV_PLAY_STORE_URL,
     KTV_UPTODOWN_URL,
     KTV_DEEP_LINK_SCHEME,
@@ -30,7 +29,6 @@ from views.splash import build_splash_view
 from views.home import build_home_view
 from views.search import build_search_view
 from views.content_detail import build_content_detail_view
-from views.player import build_player_view
 
 
 def _theme_button_style(is_primary: bool = False):
@@ -53,13 +51,23 @@ def _theme_button_style(is_primary: bool = False):
 def show_ktv_install_dialog(page: ft.Page):
     page.dialog_open = True
 
-    def open_store(e):
+    async def open_store(e):
         page.dialog_open = False
-        page.run_task(page.launch_url, KTV_PLAY_STORE_URL)
+        try:
+            page.pop_dialog()
+        except Exception:
+            pass
+        await ft.UrlLauncher().launch_url(KTV_PLAY_STORE_URL)
+        page.update()
 
-    def open_uptodown(e):
+    async def open_uptodown(e):
         page.dialog_open = False
-        page.run_task(page.launch_url, KTV_UPTODOWN_URL)
+        try:
+            page.pop_dialog()
+        except Exception:
+            pass
+        await ft.UrlLauncher().launch_url(KTV_UPTODOWN_URL)
+        page.update()
 
     def dismiss(e):
         page.dialog_open = False
@@ -67,17 +75,7 @@ def show_ktv_install_dialog(page: ft.Page):
             page.pop_dialog()
         except Exception:
             pass
-
-    player_buttons = []
-    for name in EXTERNAL_PLAYER_NAMES:
-        player_buttons.append(
-            ft.Button(
-                content=ft.Text(name),
-                icon=ft.Icons.PLAY_CIRCLE_ROUNDED,
-                on_click=open_store,
-                style=_theme_button_style(is_primary=(name == "KTV Player")),
-            )
-        )
+        page.update()
 
     dlg = ft.AlertDialog(
         modal=True,
@@ -85,16 +83,23 @@ def show_ktv_install_dialog(page: ft.Page):
         content=ft.Column(
             [
                 ft.Text(LBL_INSTALL_PLAYER_BODY, size=14),
-                ft.Container(height=16),
-                ft.Column(player_buttons, spacing=10),
             ],
             tight=True,
         ),
         actions=[
             ft.Button(content=ft.Text(LBL_NOT_NOW), on_click=dismiss),
-            ft.Button(content=ft.Text(LBL_DOWNLOAD_UPTODOWN), on_click=open_uptodown),
+            ft.Button(
+                content=ft.Text("Play Store"),
+                on_click=lambda e: page.run_task(open_store, e),
+                style=_theme_button_style(is_primary=True),
+            ),
+            ft.Button(
+                content=ft.Text(LBL_DOWNLOAD_UPTODOWN),
+                on_click=lambda e: page.run_task(open_uptodown, e),
+                style=_theme_button_style(is_primary=False),
+            ),
         ],
-        actions_alignment=ft.MainAxisAlignment.SPACE_BETWEEN,
+        actions_alignment=ft.MainAxisAlignment.END,
     )
 
     page.show_dialog(dlg)
@@ -257,10 +262,7 @@ class AppController:
 
             self._refresh_episodes()
 
-            if USE_EXTERNAL_PLAYER:
-                self.page.run_task(self._play_episode_external, source.url)
-            else:
-                await self.navigate("/play")
+            self.page.run_task(self._play_episode_external, source.url)
         except Exception:
             self._show_snackbar(ERR_LOAD_EPISODE, AppColors.ERROR)
 
@@ -269,7 +271,7 @@ class AppController:
         deep_link = f"{KTV_DEEP_LINK_SCHEME}{encoded_url}"
 
         try:
-            await self.page.launch_url(deep_link)
+            await ft.UrlLauncher().launch_url(deep_link)
         except Exception:
             pass
 
@@ -351,38 +353,13 @@ class AppController:
             )
             self.page.run_task(self.load_episodes, content_id, 1)
 
-        elif parsed.path == "/play":
-            try:
-                self.page.pop_dialog()
-            except Exception:
-                pass
-            if state.selected_source:
-                self.page.views.append(
-                    build_player_view(
-                        page_obj=self.page,
-                    )
-                )
-            else:
-                await self.navigate("/home")
-
         self.page.update()
 
     def view_pop(self, e: ft.ViewPopEvent):
         if len(self.page.views) > 1:
-            top_view = self.page.views[-1]
-            route = getattr(top_view, "route", "")
-            if route.startswith("/play"):
-                for control in top_view.controls:
-                    if hasattr(control, "pause"):
-                        try:
-                            control.pause()
-                        except Exception:
-                            pass
-
             self.page.views.pop()
-            if route.startswith("/play"):
-                self._refresh_episodes()
-                self._update_home_grid()
+            if self.page.views:
+                self.page.route = self.page.views[-1].route
             self.page.update()
 
     def _update_home_grid(self):

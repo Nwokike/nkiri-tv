@@ -290,6 +290,8 @@ def build_content_detail_view(
         page_obj.update()
         if len(page_obj.views) > 1:
             page_obj.views.pop()
+            if page_obj.views:
+                page_obj.route = page_obj.views[-1].route
             page_obj.update()
 
     page_obj.refresh_episodes = refresh_episodes
