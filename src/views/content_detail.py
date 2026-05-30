@@ -3,8 +3,13 @@ from core.state import state, Episode
 from core.theme import AppColors
 from core.focus_manager import make_focusable_button, make_focusable_border
 from core.constants import (
-    LBL_EPISODES, LBL_DOWNLOAD_LINKS, LBL_EPISODE, LBL_SEASON,
-    LBL_PAGE, LBL_PREVIOUS, LBL_NEXT,
+    LBL_EPISODES,
+    LBL_DOWNLOAD_LINKS,
+    LBL_EPISODE,
+    LBL_SEASON,
+    LBL_PAGE,
+    LBL_PREVIOUS,
+    LBL_NEXT,
 )
 
 
@@ -31,8 +36,12 @@ def build_content_detail_view(
         visible=False,
     )
 
-    prev_spinner = ft.ProgressRing(color=AppColors.PRIMARY, stroke_width=3, width=20, height=20, visible=False)
-    next_spinner = ft.ProgressRing(color=AppColors.PRIMARY, stroke_width=3, width=20, height=20, visible=False)
+    prev_spinner = ft.ProgressRing(
+        color=AppColors.PRIMARY, stroke_width=3, width=20, height=20, visible=False
+    )
+    next_spinner = ft.ProgressRing(
+        color=AppColors.PRIMARY, stroke_width=3, width=20, height=20, visible=False
+    )
 
     def on_hover_ep(e, container):
         if e.data == "true":
@@ -46,7 +55,7 @@ def build_content_detail_view(
             )
         else:
             container.scale = 1.0
-            container.border = ft.Border.all(0, ft.Colors.TRANSPARENT)
+            container.border = ft.Border.all(4, ft.Colors.TRANSPARENT)
             container.shadow = None
         container.update()
 
@@ -67,7 +76,9 @@ def build_content_detail_view(
             )
         else:
             img = ft.Container(
-                content=ft.Icon(ft.Icons.MOVIE_ROUNDED, size=48, color=ft.Colors.ON_SURFACE_VARIANT),
+                content=ft.Icon(
+                    ft.Icons.MOVIE_ROUNDED, size=48, color=ft.Colors.ON_SURFACE_VARIANT
+                ),
                 expand=True,
                 bgcolor=ft.Colors.with_opacity(0.1, ft.Colors.ON_SURFACE),
                 alignment=ft.Alignment.CENTER,
@@ -133,7 +144,9 @@ def build_content_detail_view(
         play_badge = ft.Container(
             alignment=ft.Alignment.CENTER,
             content=ft.Icon(
-                ft.Icons.PLAY_CIRCLE_FILL_ROUNDED if not is_playing else ft.Icons.EQUALIZER_ROUNDED,
+                ft.Icons.PLAY_CIRCLE_FILL_ROUNDED
+                if not is_playing
+                else ft.Icons.EQUALIZER_ROUNDED,
                 size=48,
                 color=AppColors.PRIMARY if is_playing else ft.Colors.WHITE,
             ),
@@ -151,8 +164,8 @@ def build_content_detail_view(
                         [title_text, meta_text],
                         alignment=ft.MainAxisAlignment.END,
                         spacing=4,
-                    )
-                )
+                    ),
+                ),
             ],
             expand=True,
         )
@@ -166,11 +179,16 @@ def build_content_detail_view(
 
         card_container = ft.Container(
             content=card_inner,
+            border=ft.Border.all(4, ft.Colors.TRANSPARENT),
+            padding=4,
+            border_radius=16,
             animate_scale=300,
             animate=300,
             ink=True,
             key=f"ep_card_{idx}",
-            on_click=lambda _, i=idx, c=content: page_obj.run_task(on_play_episode, c, i),
+            on_click=lambda _, i=idx, c=content: page_obj.run_task(
+                on_play_episode, c, i
+            ),
         )
         card_container.on_hover = lambda e, ctr=card_container: on_hover_ep(e, ctr)
         card_container.tab_index = idx + 2
@@ -221,8 +239,18 @@ def build_content_detail_view(
         if not is_movie:
             prev_btn.content = ft.Row(
                 [
-                    ft.Icon(ft.Icons.ARROW_BACK_IOS_NEW_ROUNDED, color=ft.Colors.ON_SURFACE if state.episodes_page > 1 else ft.Colors.ON_SURFACE_VARIANT),
-                    ft.Text(LBL_PREVIOUS, color=ft.Colors.ON_SURFACE if state.episodes_page > 1 else ft.Colors.ON_SURFACE_VARIANT),
+                    ft.Icon(
+                        ft.Icons.ARROW_BACK_IOS_NEW_ROUNDED,
+                        color=ft.Colors.ON_SURFACE
+                        if state.episodes_page > 1
+                        else ft.Colors.ON_SURFACE_VARIANT,
+                    ),
+                    ft.Text(
+                        LBL_PREVIOUS,
+                        color=ft.Colors.ON_SURFACE
+                        if state.episodes_page > 1
+                        else ft.Colors.ON_SURFACE_VARIANT,
+                    ),
                 ],
                 spacing=8,
             )
@@ -232,8 +260,18 @@ def build_content_detail_view(
 
             next_btn.content = ft.Row(
                 [
-                    ft.Text(LBL_NEXT, color=ft.Colors.ON_SURFACE if state.episodes_has_more else ft.Colors.ON_SURFACE_VARIANT),
-                    ft.Icon(ft.Icons.ARROW_FORWARD_IOS_ROUNDED, color=ft.Colors.ON_SURFACE if state.episodes_has_more else ft.Colors.ON_SURFACE_VARIANT),
+                    ft.Text(
+                        LBL_NEXT,
+                        color=ft.Colors.ON_SURFACE
+                        if state.episodes_has_more
+                        else ft.Colors.ON_SURFACE_VARIANT,
+                    ),
+                    ft.Icon(
+                        ft.Icons.ARROW_FORWARD_IOS_ROUNDED,
+                        color=ft.Colors.ON_SURFACE
+                        if state.episodes_has_more
+                        else ft.Colors.ON_SURFACE_VARIANT,
+                    ),
                 ],
                 spacing=8,
             )
@@ -241,13 +279,32 @@ def build_content_detail_view(
             next_btn.tab_index = num_eps + 3
 
             ep_nav = ft.Row(
-                controls=[prev_btn, prev_spinner, ft.Text(f"{LBL_PAGE} {state.episodes_page}", color=ft.Colors.ON_SURFACE, weight=ft.FontWeight.W_500), next_spinner, next_btn],
+                controls=[
+                    prev_btn,
+                    prev_spinner,
+                    ft.Text(
+                        f"{LBL_PAGE} {state.episodes_page}",
+                        color=ft.Colors.ON_SURFACE,
+                        weight=ft.FontWeight.W_500,
+                    ),
+                    next_spinner,
+                    next_btn,
+                ],
                 alignment=ft.MainAxisAlignment.CENTER,
                 spacing=16,
             )
-            episodes_section.controls = [episodes_header, episode_grid, ep_nav, loading_indicator]
+            episodes_section.controls = [
+                episodes_header,
+                episode_grid,
+                ep_nav,
+                loading_indicator,
+            ]
         else:
-            episodes_section.controls = [episodes_header, episode_grid, loading_indicator]
+            episodes_section.controls = [
+                episodes_header,
+                episode_grid,
+                loading_indicator,
+            ]
         page_obj.update()
 
     def on_next_ep_page(e):
@@ -285,12 +342,15 @@ def build_content_detail_view(
         ),
     ]
     if poster_url:
-        bg_controls.insert(0, ft.Image(
-            src=poster_url,
-            fit="cover",
-            expand=True,
-            opacity=0.3,
-        ))
+        bg_controls.insert(
+            0,
+            ft.Image(
+                src=poster_url,
+                fit="cover",
+                expand=True,
+                opacity=0.3,
+            ),
+        )
 
     bg_container = ft.Stack(
         expand=True,
@@ -339,7 +399,9 @@ def build_content_detail_view(
             ft.Image(src=poster_url, fit="cover", border_radius=16)
             if poster_url
             else ft.Container(
-                content=ft.Icon(ft.Icons.MOVIE_ROUNDED, size=64, color=ft.Colors.ON_SURFACE_VARIANT),
+                content=ft.Icon(
+                    ft.Icons.MOVIE_ROUNDED, size=64, color=ft.Colors.ON_SURFACE_VARIANT
+                ),
                 bgcolor=ft.Colors.with_opacity(0.1, ft.Colors.ON_SURFACE),
                 border_radius=16,
                 alignment=ft.Alignment.CENTER,
@@ -348,7 +410,9 @@ def build_content_detail_view(
     )
 
     back_btn = ft.Container(
-        content=ft.Icon(ft.Icons.ARROW_BACK_IOS_NEW_ROUNDED, color=ft.Colors.ON_SURFACE),
+        content=ft.Icon(
+            ft.Icons.ARROW_BACK_IOS_NEW_ROUNDED, color=ft.Colors.ON_SURFACE
+        ),
         padding=10,
         border_radius=10,
         ink=True,
@@ -431,7 +495,10 @@ def build_content_detail_view(
     prev_btn = ft.Container(
         content=ft.Row(
             [
-                ft.Icon(ft.Icons.ARROW_BACK_IOS_NEW_ROUNDED, color=ft.Colors.ON_SURFACE_VARIANT),
+                ft.Icon(
+                    ft.Icons.ARROW_BACK_IOS_NEW_ROUNDED,
+                    color=ft.Colors.ON_SURFACE_VARIANT,
+                ),
                 ft.Text(LBL_PREVIOUS, color=ft.Colors.ON_SURFACE_VARIANT),
             ],
             spacing=8,
@@ -449,7 +516,10 @@ def build_content_detail_view(
         content=ft.Row(
             [
                 ft.Text(LBL_NEXT, color=ft.Colors.ON_SURFACE_VARIANT),
-                ft.Icon(ft.Icons.ARROW_FORWARD_IOS_ROUNDED, color=ft.Colors.ON_SURFACE_VARIANT),
+                ft.Icon(
+                    ft.Icons.ARROW_FORWARD_IOS_ROUNDED,
+                    color=ft.Colors.ON_SURFACE_VARIANT,
+                ),
             ],
             spacing=8,
         ),

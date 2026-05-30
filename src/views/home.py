@@ -2,7 +2,11 @@ import flet as ft
 from core.state import state, Content
 from core.theme import AppColors
 from core.config import CATEGORIES
-from core.focus_manager import make_focusable_card, make_focusable_button, make_focusable_border
+from core.focus_manager import (
+    make_focusable_card,
+    make_focusable_button,
+    make_focusable_border,
+)
 from core.constants import APP_NAME, LBL_PREVIOUS, LBL_NEXT, LBL_PAGE
 
 
@@ -21,7 +25,9 @@ def build_home_view(
         margin=24,
     )
 
-    loading_spinner = ft.ProgressRing(color=AppColors.PRIMARY, stroke_width=3, width=20, height=20, visible=False)
+    loading_spinner = ft.ProgressRing(
+        color=AppColors.PRIMARY, stroke_width=3, width=20, height=20, visible=False
+    )
 
     def on_hover_card(e, container):
         if e.data == "true":
@@ -35,7 +41,7 @@ def build_home_view(
             )
         else:
             container.scale = 1.0
-            container.border = ft.Border.all(0, ft.Colors.TRANSPARENT)
+            container.border = ft.Border.all(4, ft.Colors.TRANSPARENT)
             container.shadow = None
         container.update()
 
@@ -47,7 +53,9 @@ def build_home_view(
         )
         if not content.poster:
             img = ft.Container(
-                content=ft.Icon(ft.Icons.MOVIE_ROUNDED, size=48, color=ft.Colors.ON_SURFACE_VARIANT),
+                content=ft.Icon(
+                    ft.Icons.MOVIE_ROUNDED, size=48, color=ft.Colors.ON_SURFACE_VARIANT
+                ),
                 expand=True,
                 bgcolor=ft.Colors.with_opacity(0.1, ft.Colors.ON_SURFACE),
                 alignment=ft.Alignment.CENTER,
@@ -92,8 +100,8 @@ def build_home_view(
                         [title_text, meta_text],
                         alignment=ft.MainAxisAlignment.END,
                         spacing=4,
-                    )
-                )
+                    ),
+                ),
             ],
             expand=True,
         )
@@ -107,6 +115,9 @@ def build_home_view(
 
         card_container = ft.Container(
             content=card_inner,
+            border=ft.Border.all(4, ft.Colors.TRANSPARENT),
+            padding=4,
+            border_radius=16,
             animate_scale=300,
             animate=300,
             ink=True,
@@ -151,8 +162,18 @@ def build_home_view(
 
         prev_btn.content = ft.Row(
             [
-                ft.Icon(ft.Icons.ARROW_BACK_IOS_NEW_ROUNDED, color=ft.Colors.ON_SURFACE if state.latest_page > 1 else ft.Colors.ON_SURFACE_VARIANT),
-                ft.Text(LBL_PREVIOUS, color=ft.Colors.ON_SURFACE if state.latest_page > 1 else ft.Colors.ON_SURFACE_VARIANT),
+                ft.Icon(
+                    ft.Icons.ARROW_BACK_IOS_NEW_ROUNDED,
+                    color=ft.Colors.ON_SURFACE
+                    if state.latest_page > 1
+                    else ft.Colors.ON_SURFACE_VARIANT,
+                ),
+                ft.Text(
+                    LBL_PREVIOUS,
+                    color=ft.Colors.ON_SURFACE
+                    if state.latest_page > 1
+                    else ft.Colors.ON_SURFACE_VARIANT,
+                ),
             ],
             spacing=8,
         )
@@ -162,8 +183,18 @@ def build_home_view(
 
         next_btn.content = ft.Row(
             [
-                ft.Text(LBL_NEXT, color=ft.Colors.ON_SURFACE if state.latest_has_more else ft.Colors.ON_SURFACE_VARIANT),
-                ft.Icon(ft.Icons.ARROW_FORWARD_IOS_ROUNDED, color=ft.Colors.ON_SURFACE if state.latest_has_more else ft.Colors.ON_SURFACE_VARIANT),
+                ft.Text(
+                    LBL_NEXT,
+                    color=ft.Colors.ON_SURFACE
+                    if state.latest_has_more
+                    else ft.Colors.ON_SURFACE_VARIANT,
+                ),
+                ft.Icon(
+                    ft.Icons.ARROW_FORWARD_IOS_ROUNDED,
+                    color=ft.Colors.ON_SURFACE
+                    if state.latest_has_more
+                    else ft.Colors.ON_SURFACE_VARIANT,
+                ),
             ],
             spacing=8,
         )
@@ -171,7 +202,16 @@ def build_home_view(
         next_btn.tab_index = num_cards + 4
 
         nav_row = ft.Row(
-            controls=[prev_btn, loading_spinner, ft.Text(f"{LBL_PAGE} {state.latest_page}", color=ft.Colors.ON_SURFACE, weight=ft.FontWeight.W_500), next_btn],
+            controls=[
+                prev_btn,
+                loading_spinner,
+                ft.Text(
+                    f"{LBL_PAGE} {state.latest_page}",
+                    color=ft.Colors.ON_SURFACE,
+                    weight=ft.FontWeight.W_500,
+                ),
+                next_btn,
+            ],
             alignment=ft.MainAxisAlignment.CENTER,
             spacing=16,
         )
@@ -194,20 +234,32 @@ def build_home_view(
                 ft.Container(
                     expand=True,
                     alignment=ft.Alignment.CENTER,
-                    content=ft.ProgressRing(color=AppColors.PRIMARY, stroke_width=4)
-                )
+                    content=ft.ProgressRing(color=AppColors.PRIMARY, stroke_width=4),
+                ),
             ]
         else:
-            scroll_content.controls = [header, category_chips, section_header, latest_grid, nav_row]
+            scroll_content.controls = [
+                header,
+                category_chips,
+                section_header,
+                latest_grid,
+                nav_row,
+            ]
 
         page_obj.update()
 
     def handle_theme_toggle(e):
         theme_btn.disabled = True
         page_obj.update()
-        page_obj.theme_mode = ft.ThemeMode.LIGHT if page_obj.theme_mode == ft.ThemeMode.DARK else ft.ThemeMode.DARK
+        page_obj.theme_mode = (
+            ft.ThemeMode.LIGHT
+            if page_obj.theme_mode == ft.ThemeMode.DARK
+            else ft.ThemeMode.DARK
+        )
         theme_btn.content = ft.Icon(
-            ft.Icons.LIGHT_MODE_ROUNDED if page_obj.theme_mode == ft.ThemeMode.DARK else ft.Icons.DARK_MODE_ROUNDED,
+            ft.Icons.LIGHT_MODE_ROUNDED
+            if page_obj.theme_mode == ft.ThemeMode.DARK
+            else ft.Icons.DARK_MODE_ROUNDED,
             color=ft.Colors.ON_SURFACE,
         )
         theme_btn.disabled = False
@@ -250,7 +302,9 @@ def build_home_view(
 
     theme_btn = ft.Container(
         content=ft.Icon(
-            ft.Icons.LIGHT_MODE_ROUNDED if page_obj.theme_mode == ft.ThemeMode.DARK else ft.Icons.DARK_MODE_ROUNDED,
+            ft.Icons.LIGHT_MODE_ROUNDED
+            if page_obj.theme_mode == ft.ThemeMode.DARK
+            else ft.Icons.DARK_MODE_ROUNDED,
             color=ft.Colors.ON_SURFACE,
         ),
         padding=10,
@@ -274,16 +328,19 @@ def build_home_view(
                 ),
                 ft.Row(
                     controls=[search_btn, theme_btn],
-                )
+                ),
             ],
             alignment=ft.MainAxisAlignment.SPACE_BETWEEN,
-        )
+        ),
     )
 
     prev_btn = ft.Container(
         content=ft.Row(
             [
-                ft.Icon(ft.Icons.ARROW_BACK_IOS_NEW_ROUNDED, color=ft.Colors.ON_SURFACE_VARIANT),
+                ft.Icon(
+                    ft.Icons.ARROW_BACK_IOS_NEW_ROUNDED,
+                    color=ft.Colors.ON_SURFACE_VARIANT,
+                ),
                 ft.Text(LBL_PREVIOUS, color=ft.Colors.ON_SURFACE_VARIANT),
             ],
             spacing=8,
@@ -301,7 +358,10 @@ def build_home_view(
         content=ft.Row(
             [
                 ft.Text(LBL_NEXT, color=ft.Colors.ON_SURFACE_VARIANT),
-                ft.Icon(ft.Icons.ARROW_FORWARD_IOS_ROUNDED, color=ft.Colors.ON_SURFACE_VARIANT),
+                ft.Icon(
+                    ft.Icons.ARROW_FORWARD_IOS_ROUNDED,
+                    color=ft.Colors.ON_SURFACE_VARIANT,
+                ),
             ],
             spacing=8,
         ),

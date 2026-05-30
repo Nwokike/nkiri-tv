@@ -23,16 +23,18 @@ class FocusManager:
 def apply_focus_scale(control: ft.Container, focused: bool):
     if focused:
         control.scale = 1.08
+        control.bgcolor = ft.Colors.with_opacity(0.25, PRIMARY_COLOR)
         control.border = ft.Border.all(4, PRIMARY_COLOR)
         control.shadow = ft.BoxShadow(
-            spread_radius=6,
-            blur_radius=30,
-            color=ft.Colors.with_opacity(0.7, PRIMARY_COLOR),
+            spread_radius=8,
+            blur_radius=35,
+            color=ft.Colors.with_opacity(0.85, PRIMARY_COLOR),
             offset=ft.Offset(0, 12),
         )
     else:
         control.scale = 1.0
-        control.border = ft.Border.all(0, ft.Colors.TRANSPARENT)
+        control.bgcolor = ft.Colors.TRANSPARENT
+        control.border = ft.Border.all(4, ft.Colors.TRANSPARENT)
         control.shadow = None
     try:
         control.update()
@@ -42,8 +44,8 @@ def apply_focus_scale(control: ft.Container, focused: bool):
 
 def apply_focus_border(control: ft.Container, focused: bool):
     if focused:
-        control.bgcolor = ft.Colors.with_opacity(0.1, PRIMARY_COLOR)
-        control.border = ft.Border.all(2, PRIMARY_COLOR)
+        control.bgcolor = ft.Colors.with_opacity(0.25, PRIMARY_COLOR)
+        control.border = ft.Border.all(2.5, PRIMARY_COLOR)
     else:
         control.bgcolor = None
         control.border = ft.Border.all(1.5, PRIMARY_COLOR)
@@ -55,7 +57,7 @@ def apply_focus_border(control: ft.Container, focused: bool):
 
 def apply_focus_btn(control: ft.Container, focused: bool):
     if focused:
-        control.bgcolor = ft.Colors.with_opacity(0.1, PRIMARY_COLOR)
+        control.bgcolor = ft.Colors.with_opacity(0.25, PRIMARY_COLOR)
     else:
         control.bgcolor = None
     try:

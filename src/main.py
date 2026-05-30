@@ -5,11 +5,23 @@ import urllib.parse
 
 from core.theme import AppTheme, AppColors
 from core.state import state, Content
-from core.config import USE_EXTERNAL_PLAYER, KTV_PLAY_STORE_URL, KTV_UPTODOWN_URL, KTV_DEEP_LINK_SCHEME, EXTERNAL_PLAYER_NAMES, DEFAULT_CATEGORY
+from core.config import (
+    USE_EXTERNAL_PLAYER,
+    KTV_PLAY_STORE_URL,
+    KTV_UPTODOWN_URL,
+    KTV_DEEP_LINK_SCHEME,
+    EXTERNAL_PLAYER_NAMES,
+    DEFAULT_CATEGORY,
+)
 from core.focus_manager import FocusManager
 from core.constants import (
-    APP_NAME, ERR_NETWORK, ERR_NO_STREAM, ERR_LOAD_EPISODE,
-    LBL_INSTALL_PLAYER_TITLE, LBL_INSTALL_PLAYER_BODY, LBL_NOT_NOW,
+    APP_NAME,
+    ERR_NETWORK,
+    ERR_NO_STREAM,
+    ERR_LOAD_EPISODE,
+    LBL_INSTALL_PLAYER_TITLE,
+    LBL_INSTALL_PLAYER_BODY,
+    LBL_NOT_NOW,
     LBL_DOWNLOAD_UPTODOWN,
 )
 from services.nkiri import NkiriScraper
@@ -25,11 +37,15 @@ def _theme_button_style(is_primary: bool = False):
     return ft.ButtonStyle(
         bgcolor={
             ft.ControlState.FOCUSED: AppColors.PRIMARY,
-            ft.ControlState.DEFAULT: AppColors.PRIMARY if is_primary else ft.Colors.SURFACE,
+            ft.ControlState.DEFAULT: AppColors.PRIMARY
+            if is_primary
+            else ft.Colors.SURFACE,
         },
         color={
             ft.ControlState.FOCUSED: ft.Colors.WHITE,
-            ft.ControlState.DEFAULT: ft.Colors.WHITE if is_primary else ft.Colors.ON_SURFACE,
+            ft.ControlState.DEFAULT: ft.Colors.WHITE
+            if is_primary
+            else ft.Colors.ON_SURFACE,
         },
     )
 
@@ -94,9 +110,7 @@ class AppController:
 
         self.page.on_error = lambda e: self._show_error_snackbar()
 
-        self.page.fonts = {
-            "Outfit": "assets/outfit.css"
-        }
+        self.page.fonts = {"Outfit": "assets/outfit.css"}
         self.page.theme = AppTheme.get_light_theme()
         self.page.dark_theme = AppTheme.get_dark_theme()
         self.page.theme.font_family = "Outfit"
@@ -132,6 +146,10 @@ class AppController:
         return self._loading_locks[key]
 
     def _handle_global_back(self):
+        if self.page.dialog and self.page.dialog.open:
+            self.page.dialog.open = False
+            self.page.update()
+            return
         if len(self.page.views) > 1:
             self.page.views.pop()
             self.page.update()
@@ -151,7 +169,9 @@ class AppController:
             self._update_home_grid()
 
             try:
-                results, has_more = await self.scraper.latest_releases(page_num, state.active_category)
+                results, has_more = await self.scraper.latest_releases(
+                    page_num, state.active_category
+                )
                 state.latest_releases = results
                 state.latest_has_more = has_more
             except Exception:
@@ -227,6 +247,8 @@ class AppController:
             state.current_content_id = content.nkiri_id
             state.current_episode_index = episode_index
 
+            self._refresh_episodes()
+
             if USE_EXTERNAL_PLAYER:
                 self.page.run_task(self._play_episode_external, source.url)
             else:
@@ -268,8 +290,12 @@ class AppController:
                 build_home_view(
                     page_obj=self.page,
                     on_load_latest=self.load_latest,
-                    on_select_content=lambda c: self.page.run_task(self.navigate, f"/content/{c.nkiri_id}"),
-                    on_search_click=lambda _=None: self.page.run_task(self.navigate, "/search"),
+                    on_select_content=lambda c: self.page.run_task(
+                        self.navigate, f"/content/{c.nkiri_id}"
+                    ),
+                    on_search_click=lambda _=None: self.page.run_task(
+                        self.navigate, "/search"
+                    ),
                 )
             )
 
@@ -278,7 +304,9 @@ class AppController:
                 build_search_view(
                     page_obj=self.page,
                     on_search=self.load_search,
-                    on_select_content=lambda c: self.page.run_task(self.navigate, f"/content/{c.nkiri_id}"),
+                    on_select_content=lambda c: self.page.run_task(
+                        self.navigate, f"/content/{c.nkiri_id}"
+                    ),
                     on_back=lambda _=None: self.page.run_task(self.navigate, "/home"),
                 )
             )
@@ -293,9 +321,19 @@ class AppController:
             matching = [c for c in state.latest_releases if c.nkiri_id == content_id]
             if not matching:
                 matching = [c for c in state.search_results if c.nkiri_id == content_id]
-            content_obj = matching[0] if matching else Content(
-                nkiri_id=content_id, title="Loading...", poster="", year="", rating="",
-                description="", categories=[], content_type="",
+            content_obj = (
+                matching[0]
+                if matching
+                else Content(
+                    nkiri_id=content_id,
+                    title="Loading...",
+                    poster="",
+                    year="",
+                    rating="",
+                    description="",
+                    categories=[],
+                    content_type="",
+                )
             )
             state.episodes_page = 1
             self.page.views.append(
@@ -337,6 +375,8 @@ class AppController:
                             pass
 
             self.page.views.pop()
+            if route.startswith("/play"):
+                self._refresh_episodes()
             self.page.update()
 
     def _update_home_grid(self):
