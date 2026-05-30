@@ -1,7 +1,6 @@
 import flet as ft
 from core.state import state, Episode
 from core.theme import AppColors
-from core.focus_manager import make_focusable_button, make_focusable_border
 from core.constants import (
     LBL_EPISODES,
     LBL_DOWNLOAD_LINKS,
@@ -419,7 +418,6 @@ def build_content_detail_view(
         on_click=on_back,
     )
     back_btn.tab_index = 1
-    make_focusable_button(back_btn)
 
     header = ft.Container(
         padding=ft.Padding.all(32),
@@ -510,7 +508,6 @@ def build_content_detail_view(
         on_click=on_prev_ep_page,
     )
     prev_btn.tab_index = 2
-    make_focusable_border(prev_btn)
 
     next_btn = ft.Container(
         content=ft.Row(
@@ -530,7 +527,6 @@ def build_content_detail_view(
         on_click=on_next_ep_page,
     )
     next_btn.tab_index = 3
-    make_focusable_border(next_btn)
 
     refresh_episodes()
 

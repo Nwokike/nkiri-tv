@@ -2,11 +2,6 @@ import flet as ft
 from core.state import state, Content
 from core.theme import AppColors
 from core.config import CATEGORIES
-from core.focus_manager import (
-    make_focusable_card,
-    make_focusable_button,
-    make_focusable_border,
-)
 from core.constants import APP_NAME, LBL_PREVIOUS, LBL_NEXT, LBL_PAGE
 
 
@@ -141,7 +136,6 @@ def build_home_view(
         )
         card_container.on_hover = lambda e, ctr=card_container: on_hover_card(e, ctr)
         card_container.tab_index = idx + 3
-        make_focusable_card(card_container)
 
         wrapper = ft.Container(
             content=card_container,
@@ -313,7 +307,6 @@ def build_home_view(
         on_click=lambda _=None: on_search_click(),
     )
     search_btn.tab_index = 1
-    make_focusable_button(search_btn)
 
     theme_btn = ft.Container(
         content=ft.Icon(
@@ -328,7 +321,6 @@ def build_home_view(
         on_click=handle_theme_toggle,
     )
     theme_btn.tab_index = 2
-    make_focusable_button(theme_btn)
 
     header = ft.Container(
         padding=ft.Padding.only(left=24, right=24, top=24, bottom=8),
@@ -367,7 +359,6 @@ def build_home_view(
         on_click=on_prev_page,
     )
     prev_btn.tab_index = 3
-    make_focusable_border(prev_btn)
 
     next_btn = ft.Container(
         content=ft.Row(
@@ -387,7 +378,6 @@ def build_home_view(
         on_click=on_next_page,
     )
     next_btn.tab_index = 4
-    make_focusable_border(next_btn)
 
     scroll_content = ft.Column(
         controls=[header, latest_grid],

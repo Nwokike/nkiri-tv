@@ -2,7 +2,6 @@ import flet as ft
 import flet_video as fv
 from core.theme import AppColors
 from core.state import state
-from core.focus_manager import make_focusable_button
 from core.constants import (
     LBL_RESOLVING,
     ERR_NO_SOURCE,
@@ -79,7 +78,6 @@ def build_player_view(
         ),
     )
     back_btn.tab_index = 1
-    make_focusable_button(back_btn)
 
     async def start_playback():
         try:

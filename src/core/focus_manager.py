@@ -1,8 +1,4 @@
 import flet as ft
-from core.theme import AppColors
-
-
-PRIMARY_COLOR = AppColors.PRIMARY
 
 
 class FocusManager:
@@ -18,64 +14,3 @@ class FocusManager:
         if e.key in ("Escape", "Go Back", "Browser Back", "Backspace"):
             if self._back_handler:
                 self._back_handler()
-
-
-def apply_focus_scale(control: ft.Container, focused: bool):
-    if focused:
-        control.scale = 1.08
-        control.bgcolor = ft.Colors.with_opacity(0.25, PRIMARY_COLOR)
-        control.border = ft.Border.all(4, PRIMARY_COLOR)
-        control.shadow = ft.BoxShadow(
-            spread_radius=8,
-            blur_radius=35,
-            color=ft.Colors.with_opacity(0.85, PRIMARY_COLOR),
-            offset=ft.Offset(0, 12),
-        )
-    else:
-        control.scale = 1.0
-        control.bgcolor = ft.Colors.TRANSPARENT
-        control.border = ft.Border.all(4, ft.Colors.TRANSPARENT)
-        control.shadow = None
-    try:
-        control.update()
-    except Exception:
-        pass
-
-
-def apply_focus_border(control: ft.Container, focused: bool):
-    if focused:
-        control.bgcolor = ft.Colors.with_opacity(0.25, PRIMARY_COLOR)
-        control.border = ft.Border.all(2.5, PRIMARY_COLOR)
-    else:
-        control.bgcolor = None
-        control.border = ft.Border.all(1.5, PRIMARY_COLOR)
-    try:
-        control.update()
-    except Exception:
-        pass
-
-
-def apply_focus_btn(control: ft.Container, focused: bool):
-    if focused:
-        control.bgcolor = ft.Colors.with_opacity(0.25, PRIMARY_COLOR)
-    else:
-        control.bgcolor = None
-    try:
-        control.update()
-    except Exception:
-        pass
-
-
-def make_focusable_card(control: ft.Container):
-    control.on_focus = lambda e: apply_focus_scale(e.control, True)
-    control.on_blur = lambda e: apply_focus_scale(e.control, False)
-
-
-def make_focusable_button(control: ft.Container):
-    control.on_focus = lambda e: apply_focus_btn(e.control, True)
-    control.on_blur = lambda e: apply_focus_btn(e.control, False)
-
-
-def make_focusable_border(control: ft.Container):
-    control.on_focus = lambda e: apply_focus_border(e.control, True)
-    control.on_blur = lambda e: apply_focus_border(e.control, False)

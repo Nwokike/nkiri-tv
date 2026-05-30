@@ -2,7 +2,6 @@ import asyncio
 import flet as ft
 from core.state import state, Content
 from core.theme import AppColors
-from core.focus_manager import make_focusable_card, make_focusable_button
 from core.constants import (
     LBL_SEARCH_HINT,
     LBL_NO_RESULTS,
@@ -177,7 +176,6 @@ def build_search_view(
         )
         card_container.on_hover = lambda e, ctr=card_container: on_hover_card(e, ctr)
         card_container.tab_index = idx + 2
-        make_focusable_card(card_container)
 
         wrapper = ft.Container(
             content=card_container,
@@ -257,7 +255,6 @@ def build_search_view(
         on_click=lambda _=None: on_back(),
     )
     back_btn.tab_index = 1
-    make_focusable_button(back_btn)
 
     search_btn = ft.Container(
         content=ft.Icon(ft.Icons.SEARCH_ROUNDED, color=ft.Colors.PRIMARY),
@@ -267,7 +264,6 @@ def build_search_view(
         on_click=lambda _=None: do_search(search_field.value),
     )
     search_btn.tab_index = 2
-    make_focusable_button(search_btn)
 
     header = ft.Container(
         padding=ft.Padding.only(left=24, right=24, top=24, bottom=16),
