@@ -30,19 +30,15 @@ from views.search import build_search_view
 from views.content_detail import build_content_detail_view
 
 
-def _theme_button_style(is_primary: bool = False):
+def _theme_button_style():
     return ft.ButtonStyle(
         bgcolor={
             ft.ControlState.FOCUSED: AppColors.PRIMARY,
-            ft.ControlState.DEFAULT: AppColors.PRIMARY
-            if is_primary
-            else ft.Colors.SURFACE,
+            ft.ControlState.DEFAULT: ft.Colors.SURFACE,
         },
         color={
             ft.ControlState.FOCUSED: ft.Colors.WHITE,
-            ft.ControlState.DEFAULT: ft.Colors.WHITE
-            if is_primary
-            else ft.Colors.ON_SURFACE,
+            ft.ControlState.DEFAULT: ft.Colors.ON_SURFACE,
         },
     )
 
@@ -90,12 +86,12 @@ def show_ktv_install_dialog(page: ft.Page):
             ft.Button(
                 content=ft.Text("Play Store"),
                 on_click=lambda e: page.run_task(open_store, e),
-                style=_theme_button_style(is_primary=True),
+                style=_theme_button_style(),
             ),
             ft.Button(
                 content=ft.Text(LBL_DOWNLOAD_UPTODOWN),
                 on_click=lambda e: page.run_task(open_uptodown, e),
-                style=_theme_button_style(is_primary=False),
+                style=_theme_button_style(),
             ),
         ],
         actions_alignment=ft.MainAxisAlignment.END,
@@ -269,8 +265,11 @@ class AppController:
         encoded_url = base64.urlsafe_b64encode(mkv_url.encode()).decode()
         deep_link = f"{KTV_DEEP_LINK_SCHEME}{encoded_url}"
 
+        launcher = ft.UrlLauncher()
         try:
-            await ft.UrlLauncher().launch_url(deep_link)
+            if await launcher.can_launch_url(deep_link):
+                await launcher.launch_url(deep_link)
+                return
         except Exception:
             pass
 
