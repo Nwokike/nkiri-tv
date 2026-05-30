@@ -4,8 +4,11 @@ from core.theme import AppColors
 from core.state import state
 from core.focus_manager import make_focusable_button
 from core.constants import (
-    LBL_RESOLVING, ERR_NO_SOURCE, ERR_LOADING,
-    ERR_PLAYBACK, ERR_PLAYBACK_ENDED,
+    LBL_RESOLVING,
+    ERR_NO_SOURCE,
+    ERR_LOADING,
+    ERR_PLAYBACK,
+    ERR_PLAYBACK_ENDED,
 )
 
 
@@ -32,7 +35,9 @@ def build_player_view(
         text_align=ft.TextAlign.CENTER,
     )
 
-    loading = ft.ProgressRing(width=40, height=40, stroke_width=4, color=AppColors.PRIMARY)
+    loading = ft.ProgressRing(
+        width=40, height=40, stroke_width=4, color=AppColors.PRIMARY
+    )
 
     overlay = ft.Container(
         expand=True,
@@ -54,6 +59,11 @@ def build_player_view(
         page_obj.update()
         if len(page_obj.views) > 1:
             page_obj.views.pop()
+            if hasattr(page_obj, "refresh_episodes"):
+                try:
+                    page_obj.refresh_episodes()
+                except Exception:
+                    pass
             page_obj.update()
 
     back_btn = ft.Container(

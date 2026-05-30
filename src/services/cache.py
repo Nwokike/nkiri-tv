@@ -76,9 +76,7 @@ class Cache:
 
     async def sweep_expired(self):
         db = await self._get_db()
-        await db.execute(
-            "DELETE FROM cache WHERE expires <= ?", (int(time.time()),)
-        )
+        await db.execute("DELETE FROM cache WHERE expires <= ?", (int(time.time()),))
         await db.commit()
 
     async def start_sweep(self, interval: int = 300):

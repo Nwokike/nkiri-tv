@@ -22,7 +22,7 @@ def build_content_detail_view(
     content = series
     is_movie = content and content.content_type == "movie"
 
-    CARD_HEIGHT = 280
+    CARD_HEIGHT = 240
 
     episode_grid = ft.ResponsiveRow(
         spacing=16,

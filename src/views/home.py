@@ -17,7 +17,7 @@ def build_home_view(
     on_search_click,
 ) -> ft.View:
 
-    CARD_HEIGHT = 280
+    CARD_HEIGHT = 240
 
     latest_grid = ft.ResponsiveRow(
         spacing=16,
@@ -46,10 +46,13 @@ def build_home_view(
         container.update()
 
     def build_card(content: Content, idx: int):
+        is_playing = state.current_content_id == content.nkiri_id
+
         img = ft.Image(
             src=content.poster if content.poster else "",
             fit="cover",
             expand=True,
+            opacity=0.5 if is_playing else 1.0,
         )
         if not content.poster:
             img = ft.Container(
@@ -67,7 +70,7 @@ def build_home_view(
                 end=ft.Alignment.BOTTOM_CENTER,
                 colors=[
                     ft.Colors.TRANSPARENT,
-                    ft.Colors.with_opacity(0.8, ft.Colors.BLACK),
+                    ft.Colors.with_opacity(0.85, ft.Colors.BLACK),
                 ],
             ),
             expand=True,
@@ -89,10 +92,22 @@ def build_home_view(
             size=12,
         )
 
+        play_badge = ft.Container(
+            alignment=ft.Alignment.CENTER,
+            content=ft.Icon(
+                ft.Icons.PLAY_CIRCLE_FILL_ROUNDED
+                if not is_playing
+                else ft.Icons.EQUALIZER_ROUNDED,
+                size=48,
+                color=AppColors.PRIMARY if is_playing else ft.Colors.WHITE,
+            ),
+        )
+
         content_stack = ft.Stack(
             controls=[
                 img,
                 gradient,
+                play_badge,
                 ft.Container(
                     padding=12,
                     alignment=ft.Alignment.BOTTOM_LEFT,

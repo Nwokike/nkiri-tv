@@ -51,13 +51,18 @@ def _theme_button_style(is_primary: bool = False):
 
 
 def show_ktv_install_dialog(page: ft.Page):
+    page.dialog_open = True
+
     def open_store(e):
+        page.dialog_open = False
         page.run_task(page.launch_url, KTV_PLAY_STORE_URL)
 
     def open_uptodown(e):
+        page.dialog_open = False
         page.run_task(page.launch_url, KTV_UPTODOWN_URL)
 
     def dismiss(e):
+        page.dialog_open = False
         try:
             page.pop_dialog()
         except Exception:
@@ -146,8 +151,12 @@ class AppController:
         return self._loading_locks[key]
 
     def _handle_global_back(self):
-        if self.page.dialog and self.page.dialog.open:
-            self.page.dialog.open = False
+        if getattr(self.page, "dialog_open", False):
+            self.page.dialog_open = False
+            try:
+                self.page.pop_dialog()
+            except Exception:
+                pass
             self.page.update()
             return
         if len(self.page.views) > 1:
@@ -232,8 +241,7 @@ class AppController:
             self._show_snackbar(ERR_LOAD_EPISODE, AppColors.ERROR)
             return
 
-        state.is_loading = True
-        self.page.update()
+        self._show_snackbar("Resolving cinematic stream...", AppColors.PRIMARY)
 
         try:
             episode = state.episodes[episode_index]
@@ -255,9 +263,6 @@ class AppController:
                 await self.navigate("/play")
         except Exception:
             self._show_snackbar(ERR_LOAD_EPISODE, AppColors.ERROR)
-        finally:
-            state.is_loading = False
-            self.page.update()
 
     async def _play_episode_external(self, mkv_url: str):
         encoded_url = base64.urlsafe_b64encode(mkv_url.encode()).decode()
@@ -377,6 +382,7 @@ class AppController:
             self.page.views.pop()
             if route.startswith("/play"):
                 self._refresh_episodes()
+                self._update_home_grid()
             self.page.update()
 
     def _update_home_grid(self):

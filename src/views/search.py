@@ -4,7 +4,9 @@ from core.state import state, Content
 from core.theme import AppColors
 from core.focus_manager import make_focusable_card, make_focusable_button
 from core.constants import (
-    LBL_SEARCH_HINT, LBL_NO_RESULTS, LBL_SEARCH_EMPTY,
+    LBL_SEARCH_HINT,
+    LBL_NO_RESULTS,
+    LBL_SEARCH_EMPTY,
     MAX_SEARCH_QUERY_LENGTH,
 )
 
@@ -16,9 +18,11 @@ def build_search_view(
     on_back,
 ) -> ft.View:
 
-    CARD_HEIGHT = 280
+    CARD_HEIGHT = 240
 
-    search_spinner = ft.ProgressRing(color=AppColors.PRIMARY, stroke_width=3, width=20, height=20, visible=False)
+    search_spinner = ft.ProgressRing(
+        color=AppColors.PRIMARY, stroke_width=3, width=20, height=20, visible=False
+    )
     _debounce_task: asyncio.Task | None = None
 
     def _cancel_debounce():
@@ -50,15 +54,36 @@ def build_search_view(
         page_obj.update()
         page_obj.run_task(on_search, query)
 
+    def on_hover_card(e, container):
+        if e.data == "true":
+            container.scale = 1.08
+            container.border = ft.Border.all(4, AppColors.PRIMARY)
+            container.shadow = ft.BoxShadow(
+                spread_radius=6,
+                blur_radius=30,
+                color=ft.Colors.with_opacity(0.7, AppColors.PRIMARY),
+                offset=ft.Offset(0, 12),
+            )
+        else:
+            container.scale = 1.0
+            container.border = ft.Border.all(4, ft.Colors.TRANSPARENT)
+            container.shadow = None
+        container.update()
+
     def _build_card(content: Content, idx: int):
+        is_playing = state.current_content_id == content.nkiri_id
+
         img = ft.Image(
             src=content.poster if content.poster else "",
             fit="cover",
             expand=True,
+            opacity=0.5 if is_playing else 1.0,
         )
         if not content.poster:
             img = ft.Container(
-                content=ft.Icon(ft.Icons.MOVIE_ROUNDED, size=48, color=ft.Colors.ON_SURFACE_VARIANT),
+                content=ft.Icon(
+                    ft.Icons.MOVIE_ROUNDED, size=48, color=ft.Colors.ON_SURFACE_VARIANT
+                ),
                 expand=True,
                 bgcolor=ft.Colors.with_opacity(0.1, ft.Colors.ON_SURFACE),
                 alignment=ft.Alignment.CENTER,
@@ -70,7 +95,7 @@ def build_search_view(
                 end=ft.Alignment.BOTTOM_CENTER,
                 colors=[
                     ft.Colors.TRANSPARENT,
-                    ft.Colors.with_opacity(0.9, ft.Colors.BLACK),
+                    ft.Colors.with_opacity(0.85, ft.Colors.BLACK),
                 ],
             ),
             expand=True,
@@ -97,22 +122,37 @@ def build_search_view(
             color=ft.Colors.WHITE_70,
         )
 
+        play_badge = ft.Container(
+            alignment=ft.Alignment.CENTER,
+            content=ft.Icon(
+                ft.Icons.PLAY_CIRCLE_FILL_ROUNDED
+                if not is_playing
+                else ft.Icons.EQUALIZER_ROUNDED,
+                size=48,
+                color=AppColors.PRIMARY if is_playing else ft.Colors.WHITE,
+            ),
+        )
+
         content_stack = ft.Stack(
             controls=[
                 img,
                 gradient,
+                play_badge,
                 ft.Container(
                     padding=12,
                     alignment=ft.Alignment.BOTTOM_LEFT,
                     content=ft.Column(
                         [
                             title_text,
-                            ft.Row([year_text, ft.Container(expand=True), type_text], spacing=4),
+                            ft.Row(
+                                [year_text, ft.Container(expand=True), type_text],
+                                spacing=4,
+                            ),
                         ],
                         alignment=ft.MainAxisAlignment.END,
                         spacing=4,
-                    )
-                )
+                    ),
+                ),
             ],
             expand=True,
         )
@@ -126,19 +166,23 @@ def build_search_view(
 
         card_container = ft.Container(
             content=card_inner,
+            border=ft.Border.all(4, ft.Colors.TRANSPARENT),
+            padding=4,
+            border_radius=16,
             animate_scale=300,
             animate=300,
             ink=True,
             key=f"search_card_{idx}",
             on_click=lambda _, c=content: on_select_content(c),
         )
+        card_container.on_hover = lambda e, ctr=card_container: on_hover_card(e, ctr)
         card_container.tab_index = idx + 2
         make_focusable_card(card_container)
 
         wrapper = ft.Container(
             content=card_container,
             padding=4,
-            col={"xs": 6, "sm": 4, "md": 3, "lg": 3, "xl": 2},
+            col={"xs": 6, "sm": 4, "md": 3, "lg": 2, "xl": 2},
         )
         return wrapper
 
@@ -152,7 +196,9 @@ def build_search_view(
         elif not state.search_results and state.search_query:
             loading_indicator.visible = False
             empty_state.visible = True
-            empty_state.controls[1].value = LBL_NO_RESULTS.format(query=state.search_query)
+            empty_state.controls[1].value = LBL_NO_RESULTS.format(
+                query=state.search_query
+            )
         else:
             loading_indicator.visible = False
             empty_state.visible = False
@@ -191,7 +237,9 @@ def build_search_view(
 
     empty_state = ft.Column(
         [
-            ft.Icon(ft.Icons.SEARCH_OFF_ROUNDED, size=64, color=ft.Colors.ON_SURFACE_VARIANT),
+            ft.Icon(
+                ft.Icons.SEARCH_OFF_ROUNDED, size=64, color=ft.Colors.ON_SURFACE_VARIANT
+            ),
             ft.Text(LBL_SEARCH_EMPTY, size=16, color=ft.Colors.ON_SURFACE_VARIANT),
         ],
         horizontal_alignment=ft.CrossAxisAlignment.CENTER,
@@ -200,7 +248,9 @@ def build_search_view(
     )
 
     back_btn = ft.Container(
-        content=ft.Icon(ft.Icons.ARROW_BACK_IOS_NEW_ROUNDED, color=ft.Colors.ON_SURFACE),
+        content=ft.Icon(
+            ft.Icons.ARROW_BACK_IOS_NEW_ROUNDED, color=ft.Colors.ON_SURFACE
+        ),
         padding=10,
         border_radius=10,
         ink=True,
@@ -232,10 +282,7 @@ def build_search_view(
                             border_radius=10,
                             alignment=ft.Alignment.CENTER,
                             content=ft.Image(
-                                src="icon.png",
-                                width=24,
-                                height=24,
-                                fit="contain"
+                                src="icon.png", width=24, height=24, fit="contain"
                             ),
                         ),
                         ft.Text("Search", size=24, weight=ft.FontWeight.BOLD),
@@ -249,7 +296,7 @@ def build_search_view(
                 ),
             ],
             spacing=0,
-        )
+        ),
     )
 
     grid_area = ft.Container(

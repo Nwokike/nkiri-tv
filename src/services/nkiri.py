@@ -43,22 +43,38 @@ class NkiriScraper:
         content_type = "series"
         if any(kw in lower_raw for kw in ["movie", "film"]):
             content_type = "movie"
-        elif any(kw in lower_raw for kw in ["s01", "s02", "s03", "s04", "s05", "s06", "s07", "s08", "s09", "s10", "season", "episode"]):
+        elif any(
+            kw in lower_raw
+            for kw in [
+                "s01",
+                "s02",
+                "s03",
+                "s04",
+                "s05",
+                "s06",
+                "s07",
+                "s08",
+                "s09",
+                "s10",
+                "season",
+                "episode",
+            ]
+        ):
             content_type = "series"
-        title = re.sub(r'\s*\|\s*.*$', '', raw_text).strip()
-        title = re.sub(r'\s*Download\s*.*$', '', title, flags=re.IGNORECASE).strip()
+        title = re.sub(r"\s*\|\s*.*$", "", raw_text).strip()
+        title = re.sub(r"\s*Download\s*.*$", "", title, flags=re.IGNORECASE).strip()
 
-        year_match = re.search(r'\((\d{4})\)', title)
+        year_match = re.search(r"\((\d{4})\)", title)
         year = year_match.group(1) if year_match else ""
         if year:
             title = title.replace(f"({year})", "").strip()
-            title = re.sub(r'\s*[-–—]\s*$', '', title).strip()
+            title = re.sub(r"\s*[-–—]\s*$", "", title).strip()
 
         return title, year, content_type
 
     @staticmethod
     def _parse_rating(content_html: str) -> str:
-        patterns = [r'IMDb[:\s]*([0-9.]+)', r'Rating[:\s]*([0-9.]+)']
+        patterns = [r"IMDb[:\s]*([0-9.]+)", r"Rating[:\s]*([0-9.]+)"]
         for pattern in patterns:
             match = re.search(pattern, content_html, re.IGNORECASE)
             if match:
@@ -86,17 +102,30 @@ class NkiriScraper:
             href = link["href"]
             title_text = link.get_text(strip=True)
 
-            if not title_text or "download" in title_text.lower() or "click" in title_text.lower():
+            if (
+                not title_text
+                or "download" in title_text.lower()
+                or "click" in title_text.lower()
+            ):
                 filename = href.split("/")[-1]
-                title_text = filename.replace(".html", "").replace("(THENKIRI.COM)", "").replace(".", " ").strip()
+                title_text = (
+                    filename.replace(".html", "")
+                    .replace("(THENKIRI.COM)", "")
+                    .replace(".", " ")
+                    .strip()
+                )
 
-            title_text = re.sub(r'\s+', ' ', title_text).strip()
+            title_text = re.sub(r"\s+", " ", title_text).strip()
 
-            episode_match = re.search(r'[Ss](\d+)[Ee](\d+)', title_text)
+            episode_match = re.search(r"[Ss](\d+)[Ee](\d+)", title_text)
             if not episode_match:
-                episode_match = re.search(r'[Ss]eason\s*(\d+)\s*[Ee]pisode\s*(\d+)', title_text, re.IGNORECASE)
+                episode_match = re.search(
+                    r"[Ss]eason\s*(\d+)\s*[Ee]pisode\s*(\d+)", title_text, re.IGNORECASE
+                )
             if not episode_match:
-                episode_match = re.search(r'[Ee]pisode\s*(\d+)', title_text, re.IGNORECASE)
+                episode_match = re.search(
+                    r"[Ee]pisode\s*(\d+)", title_text, re.IGNORECASE
+                )
 
             if episode_match:
                 season = "1"
@@ -107,39 +136,45 @@ class NkiriScraper:
                 else:
                     ep_num = int(episode_match.group(1))
 
-                size_match = re.search(r'(\d+(?:\.\d+)?\s*[MGK]B)', title_text)
+                size_match = re.search(r"(\d+(?:\.\d+)?\s*[MGK]B)", title_text)
                 size = size_match.group(1) if size_match else ""
 
-                episodes.append(Episode(
-                    id=len(episodes) + 1,
-                    title=title_text or f"Season {season} Episode {ep_num}",
-                    season=season,
-                    episode_number=ep_num,
-                    thumbnail="",
-                    downloadwella_url=href,
-                    size=size,
-                ))
+                episodes.append(
+                    Episode(
+                        id=len(episodes) + 1,
+                        title=title_text or f"Season {season} Episode {ep_num}",
+                        season=season,
+                        episode_number=ep_num,
+                        thumbnail="",
+                        downloadwella_url=href,
+                        size=size,
+                    )
+                )
             else:
                 if fallback is None:
                     fallback = (href, title_text)
 
         if not episodes and fallback:
             href, title_text = fallback
-            size_match = re.search(r'(\d+(?:\.\d+)?\s*[MGK]B)', title_text)
+            size_match = re.search(r"(\d+(?:\.\d+)?\s*[MGK]B)", title_text)
             size = size_match.group(1) if size_match else ""
-            episodes.append(Episode(
-                id=1,
-                title=title_text or "Movie",
-                season="1",
-                episode_number=1,
-                thumbnail="",
-                downloadwella_url=href,
-                size=size,
-            ))
+            episodes.append(
+                Episode(
+                    id=1,
+                    title=title_text or "Movie",
+                    season="1",
+                    episode_number=1,
+                    thumbnail="",
+                    downloadwella_url=href,
+                    size=size,
+                )
+            )
 
         return episodes
 
-    async def _fetch_posters(self, client: httpx.AsyncClient, media_ids: list[int]) -> dict[int, str]:
+    async def _fetch_posters(
+        self, client: httpx.AsyncClient, media_ids: list[int]
+    ) -> dict[int, str]:
         if not media_ids:
             return {}
         ids_str = ",".join(str(x) for x in media_ids)
@@ -154,26 +189,32 @@ class NkiriScraper:
         except Exception:
             return {}
 
-    def _posts_to_content(self, posts: list[dict], poster_map: dict[int, str]) -> list[Content]:
+    def _posts_to_content(
+        self, posts: list[dict], poster_map: dict[int, str]
+    ) -> list[Content]:
         results = []
         for post in posts:
             raw_title = post.get("title", {}).get("rendered", "")
             title, year, content_type = self._clean_title(raw_title)
             poster = poster_map.get(post.get("featured_media", 0), "")
 
-            results.append(Content(
-                nkiri_id=post.get("id", 0),
-                title=title,
-                poster=poster,
-                year=year,
-                rating="",
-                description="",
-                categories=[],
-                content_type=content_type,
-            ))
+            results.append(
+                Content(
+                    nkiri_id=post.get("id", 0),
+                    title=title,
+                    poster=poster,
+                    year=year,
+                    rating="",
+                    description="",
+                    categories=[],
+                    content_type=content_type,
+                )
+            )
         return results
 
-    async def latest_releases(self, page: int = 1, category: str = "TV Series") -> tuple[list[Content], bool]:
+    async def latest_releases(
+        self, page: int = 1, category: str = "TV Series"
+    ) -> tuple[list[Content], bool]:
         cache_key = f"latest_{category}_{page}"
         cached = self._get_mem(cache_key, ttl=300)
         if cached:
@@ -274,7 +315,9 @@ class NkiriScraper:
             return self._resolve_cache[downloadwella_url]
 
         try:
-            file_id_match = re.search(r'downloadwella\.com/([a-z0-9]+)/', downloadwella_url)
+            file_id_match = re.search(
+                r"downloadwella\.com/([a-z0-9]+)/", downloadwella_url
+            )
             if not file_id_match:
                 return None
             file_id = file_id_match.group(1)
@@ -298,7 +341,9 @@ class NkiriScraper:
             if resp.status_code != 200:
                 return None
 
-            direct_match = re.search(r'(https://dwbe\d+\.downloadwella\.com/d/[^"]+\.mkv)', resp.text)
+            direct_match = re.search(
+                r'(https://dwbe\d+\.downloadwella\.com/d/[^"]+\.mkv)', resp.text
+            )
             if direct_match:
                 source = Source(
                     url=direct_match.group(1),
