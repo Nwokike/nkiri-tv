@@ -53,21 +53,7 @@ def build_search_view(
         page_obj.update()
         page_obj.run_task(on_search, query)
 
-    def on_hover_card(e, container):
-        if e.data == "true":
-            container.scale = 1.08
-            container.border = ft.Border.all(4, AppColors.PRIMARY)
-            container.shadow = ft.BoxShadow(
-                spread_radius=6,
-                blur_radius=30,
-                color=ft.Colors.with_opacity(0.7, AppColors.PRIMARY),
-                offset=ft.Offset(0, 12),
-            )
-        else:
-            container.scale = 1.0
-            container.border = ft.Border.all(4, ft.Colors.TRANSPARENT)
-            container.shadow = None
-        container.update()
+
 
     def _build_card(content: Content, idx: int):
         is_playing = state.current_content_id == content.nkiri_id
@@ -174,7 +160,6 @@ def build_search_view(
             key=f"search_card_{idx}",
             on_click=lambda _, c=content: on_select_content(c),
         )
-        card_container.on_hover = lambda e, ctr=card_container: on_hover_card(e, ctr)
         card_container.tab_index = idx + 2
 
         wrapper = ft.Container(

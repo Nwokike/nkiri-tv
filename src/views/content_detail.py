@@ -42,21 +42,7 @@ def build_content_detail_view(
         color=AppColors.PRIMARY, stroke_width=3, width=20, height=20, visible=False
     )
 
-    def on_hover_ep(e, container):
-        if e.data == "true":
-            container.scale = 1.08
-            container.border = ft.Border.all(4, AppColors.PRIMARY)
-            container.shadow = ft.BoxShadow(
-                spread_radius=6,
-                blur_radius=30,
-                color=ft.Colors.with_opacity(0.7, AppColors.PRIMARY),
-                offset=ft.Offset(0, 12),
-            )
-        else:
-            container.scale = 1.0
-            container.border = ft.Border.all(4, ft.Colors.TRANSPARENT)
-            container.shadow = None
-        container.update()
+
 
     def _build_episode_card(ep: Episode, idx: int) -> ft.Container:
         poster_url = content.poster if content and content.poster else ""
@@ -189,10 +175,7 @@ def build_content_detail_view(
                 on_play_episode, c, i
             ),
         )
-        card_container.on_hover = lambda e, ctr=card_container: on_hover_ep(e, ctr)
         card_container.tab_index = idx + 2
-        card_container.on_focus = lambda e, ctr=card_container: _on_focus_ep(e, ctr)
-        card_container.on_blur = lambda e, ctr=card_container: _on_blur_ep(e, ctr)
 
         wrapper = ft.Container(
             content=card_container,
@@ -201,28 +184,7 @@ def build_content_detail_view(
         )
         return wrapper
 
-    def _on_focus_ep(e, ctrl):
-        ctrl.scale = 1.08
-        ctrl.border = ft.Border.all(4, AppColors.PRIMARY)
-        ctrl.shadow = ft.BoxShadow(
-            spread_radius=6,
-            blur_radius=30,
-            color=ft.Colors.with_opacity(0.7, AppColors.PRIMARY),
-            offset=ft.Offset(0, 12),
-        )
-        try:
-            ctrl.update()
-        except Exception:
-            pass
 
-    def _on_blur_ep(e, ctrl):
-        ctrl.scale = 1.0
-        ctrl.border = ft.Border.all(0, ft.Colors.TRANSPARENT)
-        ctrl.shadow = None
-        try:
-            ctrl.update()
-        except Exception:
-            pass
 
     def refresh_episodes():
         episode_grid.controls.clear()
