@@ -262,18 +262,15 @@ class AppController:
             self._show_snackbar(ERR_LOAD_EPISODE, AppColors.ERROR)
 
     async def _play_episode_external(self, mkv_url: str):
-        encoded_url = base64.urlsafe_b64encode(mkv_url.encode()).decode()
+        # Strip trailing '=' padding characters to prevent URL query parameter parsing issues
+        encoded_url = base64.urlsafe_b64encode(mkv_url.encode()).decode().rstrip("=")
         deep_link = f"{KTV_DEEP_LINK_SCHEME}{encoded_url}"
 
         launcher = ft.UrlLauncher()
         try:
-            if await launcher.can_launch_url(deep_link):
-                await launcher.launch_url(deep_link)
-                return
+            await launcher.launch_url(deep_link)
         except Exception:
-            pass
-
-        show_ktv_install_dialog(self.page)
+            show_ktv_install_dialog(self.page)
 
     async def splash_complete(self):
         await asyncio.sleep(1.5)
