@@ -11,7 +11,7 @@
 <p align="center">
   <img src="https://img.shields.io/badge/Windows-0078D6?style=flat-square&logo=windows11&logoColor=white" alt="Windows" />
   <img src="https://img.shields.io/badge/Android-3DDC84?style=flat-square&logo=android&logoColor=white" alt="Android" />
-
+  <br>
   <a href="https://www.python.org/downloads" title="Get Python">
     <img src="https://img.shields.io/badge/built%20with-python%203.13+-00B0FF?style=flat-square" alt="built in python badge"/>
   </a>
