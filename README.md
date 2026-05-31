@@ -11,10 +11,34 @@
 <p align="center">
   <img src="https://img.shields.io/badge/Windows-0078D6?style=flat-square&logo=windows11&logoColor=white" alt="Windows" />
   <img src="https://img.shields.io/badge/Android-3DDC84?style=flat-square&logo=android&logoColor=white" alt="Android" />
+  <br><hr><br>
+  <a href="https://www.python.org/downloads">
+    <img src="https://img.shields.io/badge/built%20with-python%203.13+-00B0FF?style=flat-square" alt="Python" alt="Get Python"/>
+  </a>
+  <br><hr><br>
+  
+  <img src="https://img.shields.io/badge/built%20with-python%203.13+-00B0FF?style=flat-square" alt="Built with Flet" />
+  
+  <img src="https://img.shields.io/badge/flet%200.85-00B0FF?style=flat-square" alt="Built with Flet" />
   <br>
-  <img src="https://img.shields.io/badge/Built%20with-Flet%200.85-00B0FF?style=flat-square" alt="Built with Flet" />
+  <hr>
+  <img src="https://img.shields.io/badge/aaa-flet%200.85-00B0FF?style=flat-square" alt="Built with Flet" />
+  
 </p>
 
+---
+
+<img src="https://img.shields.io/badge/built%20with-python%203.13+-00B0FF?style=flat-square" alt="Built with Flet" />
+[![Python 3.13+](https://img.shields.io/badge/python-3.13+-blue.svg)](https://www.python.org/downloads/)
+[![built with](https://img.shields.io/badge/built%20with-Flet%200.85-00B0FF?style=flat-square)](https://flet.dev/)
+[![Commits per Month](https://img.shields.io/github/commit-activity/m/grcote7/gsm)](https://github.com/grcote7/gsm/commits)
+[![Total Commits](https://img.shields.io/github/commit-activity/t/grcote7/gsm)](https://github.com/grcote7/gsm/commits)
+[![Last Commit](https://img.shields.io/github/last-commit/grcote7/gsm)](https://github.com/grcote7/gsm/commits)
+
+![Windows](https://img.shields.io/badge/Windows-0078D6?style=flat-square&logo=windows11&logoColor=white")
+![Android](https://img.shields.io/badge/Android-3ddc84?logo=android&logoColor=white)
+
+---
 ---
 
 ## Download
