@@ -42,8 +42,6 @@ def build_content_detail_view(
         color=AppColors.PRIMARY, stroke_width=3, width=20, height=20, visible=False
     )
 
-
-
     def _build_episode_card(ep: Episode, idx: int) -> ft.Container:
         poster_url = content.poster if content and content.poster else ""
 
@@ -183,8 +181,6 @@ def build_content_detail_view(
             col={"xs": 6, "sm": 4, "md": 3, "lg": 2, "xl": 2},
         )
         return wrapper
-
-
 
     def refresh_episodes():
         episode_grid.controls.clear()

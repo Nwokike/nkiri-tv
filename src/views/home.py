@@ -24,8 +24,6 @@ def build_home_view(
         color=AppColors.PRIMARY, stroke_width=3, width=20, height=20, visible=False
     )
 
-
-
     def build_card(content: Content, idx: int):
         is_playing = state.current_content_id == content.nkiri_id
 

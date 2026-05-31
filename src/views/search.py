@@ -53,8 +53,6 @@ def build_search_view(
         page_obj.update()
         page_obj.run_task(on_search, query)
 
-
-
     def _build_card(content: Content, idx: int):
         is_playing = state.current_content_id == content.nkiri_id
 
