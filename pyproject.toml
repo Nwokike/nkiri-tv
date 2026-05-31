@@ -35,3 +35,8 @@ bundle_id = "com.nkiritv.app"
 dev = [
     "ruff>=0.15.13",
 ]
+
+[tool.flet.splash]
+color = "#F0F7FF"
+dark_color = "#0A0E14"
+

@@ -24,7 +24,6 @@ from core.constants import (
 )
 from services.nkiri import NkiriScraper
 from services.cache import Cache
-from views.splash import build_splash_view
 from views.home import build_home_view
 from views.search import build_search_view
 from views.content_detail import build_content_detail_view
@@ -272,10 +271,6 @@ class AppController:
         except Exception:
             show_ktv_install_dialog(self.page)
 
-    async def splash_complete(self):
-        await asyncio.sleep(1.5)
-        await self.navigate("/home")
-
     async def route_change(self, e: ft.RouteChangeEvent | None = None):
         route = self.page.route
         parsed = urllib.parse.urlparse(route)
@@ -283,11 +278,7 @@ class AppController:
         if parsed.path in ["/", "/home", "/search"]:
             self.page.views.clear()
 
-        if parsed.path == "/":
-            self.page.views.append(build_splash_view())
-            self.page.run_task(self.splash_complete)
-
-        elif parsed.path == "/home":
+        if parsed.path in ["/", "/home"]:
             self.page.views.append(
                 build_home_view(
                     page_obj=self.page,
