@@ -12,9 +12,11 @@
   <img src="https://img.shields.io/badge/Windows-0078D6?style=flat-square&logo=windows11&logoColor=white" alt="Windows" />
   <img src="https://img.shields.io/badge/Android-3DDC84?style=flat-square&logo=android&logoColor=white" alt="Android" />
   <br><hr><br>
-  <a href="https://www.python.org/downloads">
-    <img src="https://img.shields.io/badge/built%20with-python%203.13+-00B0FF?style=flat-square" alt="Python" alt="Get Python"/>
+  <a href="https://www.python.org/downloads" title="Get Python" target="_blank">
+    <img src="https://img.shields.io/badge/built%20with-python%203.13+-00B0FF?style=flat-square" alt="built in python badge"/>
   </a>
+  <br>
+  ooo
   <br><hr><br>
   
   <img src="https://img.shields.io/badge/built%20with-python%203.13+-00B0FF?style=flat-square" alt="Built with Flet" />
@@ -45,15 +47,15 @@
 
 Get the latest version of Nkiri TV. If you aren't sure which Android version to pick, choose the **Universal** APK.
 
-| Platform | Download | Size | Notes |
-|:--------:|:--------:|:----:|:------|
-| 🤖 **Android (Universal)** | [**nkiri-tv.apk**](https://github.com/Nwokike/nkiri-tv/releases/latest/download/nkiri-tv.apk) | ~86 MB | Works on all Android devices (ARM64, ARMv7, x86_64) |
-| 🤖 **Android (ARM64)** | [**nkiri-tv-arm64-v8a.apk**](https://github.com/Nwokike/nkiri-tv/releases/latest/download/nkiri-tv-arm64-v8a.apk) | ~31 MB | For modern 64-bit Android devices and TVs |
-| 🤖 **Android (ARM32)** | [**nkiri-tv-armeabi-v7a.apk**](https://github.com/Nwokike/nkiri-tv/releases/latest/download/nkiri-tv-armeabi-v7a.apk) | ~30 MB | For older 32-bit Android devices and older Firesticks |
-| 🤖 **Android (x86_64)** | [**nkiri-tv-x86_64.apk**](https://github.com/Nwokike/nkiri-tv/releases/latest/download/nkiri-tv-x86_64.apk) | ~32 MB | For Android emulators / ChromeOS |
-| 🪟 **Windows** | [**Nkiri_TV_Setup.exe**](https://github.com/Nwokike/nkiri-tv/releases/latest/download/Nkiri_TV_Setup.exe) | ~36 MB | Windows 10/11 Installer (64-bit) |
-| 🍎 **macOS** | *Coming soon* | — | |
-| 📱 **iOS** | *Coming soon* | — | |
+|          Platform          |                                                       Download                                                        |  Size  | Notes                                                 |
+|:--------------------------:|:---------------------------------------------------------------------------------------------------------------------:|:------:|:------------------------------------------------------|
+| 🤖 **Android (Universal)** |             [**nkiri-tv.apk**](https://github.com/Nwokike/nkiri-tv/releases/latest/download/nkiri-tv.apk)             | ~86 MB | Works on all Android devices (ARM64, ARMv7, x86_64)   |
+|   🤖 **Android (ARM64)**   |   [**nkiri-tv-arm64-v8a.apk**](https://github.com/Nwokike/nkiri-tv/releases/latest/download/nkiri-tv-arm64-v8a.apk)   | ~31 MB | For modern 64-bit Android devices and TVs             |
+|   🤖 **Android (ARM32)**   | [**nkiri-tv-armeabi-v7a.apk**](https://github.com/Nwokike/nkiri-tv/releases/latest/download/nkiri-tv-armeabi-v7a.apk) | ~30 MB | For older 32-bit Android devices and older Firesticks |
+|  🤖 **Android (x86_64)**   |      [**nkiri-tv-x86_64.apk**](https://github.com/Nwokike/nkiri-tv/releases/latest/download/nkiri-tv-x86_64.apk)      | ~32 MB | For Android emulators / ChromeOS                      |
+|       🪟 **Windows**       |       [**Nkiri_TV_Setup.exe**](https://github.com/Nwokike/nkiri-tv/releases/latest/download/Nkiri_TV_Setup.exe)       | ~36 MB | Windows 10/11 Installer (64-bit)                      |
+|        🍎 **macOS**        |                                                     *Coming soon*                                                     |   —    |                                                       |
+|         📱 **iOS**         |                                                     *Coming soon*                                                     |   —    |                                                       |
 
 ---
 
@@ -75,17 +77,17 @@ Get the latest version of Nkiri TV. If you aren't sure which Android version to 
 
 ## Architecture
 
-| Layer | Technology |
-|-------|-----------|
-| Frontend | Flet 0.85 (Python → Flutter) |
-| Video Engine | `flet-video` (libmpv backend) |
-| Network | `httpx` (async, connection pooling) |
-| Cache | `aiosqlite` (WAL-mode SQLite with TTL) + in-memory LRU |
-| Stream Resolver | downloadwella POST → regex direct `.mkv` extraction |
-| Content Source | Nkiri WordPress REST API (`/wp-json/wp/v2/posts`) |
-| State Management | Flet `@observable` reactive state with page-scoped view builders |
-| Routing | Flet declarative routing with view stack management |
-| Navigation | Sequential `tab_index` D-pad focus chain across all interactive elements |
+| Layer            | Technology                                                               |
+|------------------|--------------------------------------------------------------------------|
+| Frontend         | Flet 0.85 (Python → Flutter)                                             |
+| Video Engine     | `flet-video` (libmpv backend)                                            |
+| Network          | `httpx` (async, connection pooling)                                      |
+| Cache            | `aiosqlite` (WAL-mode SQLite with TTL) + in-memory LRU                   |
+| Stream Resolver  | downloadwella POST → regex direct `.mkv` extraction                      |
+| Content Source   | Nkiri WordPress REST API (`/wp-json/wp/v2/posts`)                        |
+| State Management | Flet `@observable` reactive state with page-scoped view builders         |
+| Routing          | Flet declarative routing with view stack management                      |
+| Navigation       | Sequential `tab_index` D-pad focus chain across all interactive elements |
 
 ### Project Structure
 
